@@ -153,16 +153,21 @@ def get_product(kind, product_id):
 
 
 def list_artists(limit=None):
-    """Artists that have at least one active swap, with up to 3 swap names."""
+    """Artists that have active swaps, with up to three image-ready previews."""
     artists = (Artist.select().join(Swap).where(Swap.is_active == True)  # noqa: E712
                .group_by(Artist.id).order_by(fn.COUNT(Swap.id).desc()))
     if limit:
         artists = artists.limit(limit)
     result = []
     for a in artists:
-        swaps = list(a.swaps.where(Swap.is_active == True).limit(3))  # noqa: E712
+        swaps = list(a.swaps.where(Swap.is_active == True).order_by(Swap.popularity.desc(), Swap.id).limit(3))  # noqa: E712
+        previews = []
+        for swap in swaps:
+            images = product_images(swap)
+            image_url = images[0]["url"] if images else _legacy_image_url(swap.image_url)
+            previews.append({"id": swap.id, "name": swap.name, "imageUrl": image_url})
         result.append({"id": a.id, "name": a.name, "bio": a.bio,
-                       "swaps": [s.name for s in swaps]})
+                       "swaps": previews})
     return result
 
 

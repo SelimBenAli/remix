@@ -41,6 +41,11 @@ def swaps():
     return render_template("swaps.html", active_page="swaps")
 
 
+@storefront_bp.route("/customize")
+def customize():
+    return render_template("customize.html", active_page="customize")
+
+
 @storefront_bp.route("/order")
 @storefront_bp.route("/checkout")
 def order_page():

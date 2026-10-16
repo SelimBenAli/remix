@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='20261015-5') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='20261016-2') }}">
 {% block extra_head %}{% endblock %}
 </head>
 <body class="{{ active_page|default('') }}-page">
@@ -32,7 +32,7 @@
       <a href="/" class="{{ 'is-active' if active_page == 'home' else '' }}">Home</a>
       <a href="/bases" class="{{ 'is-active' if active_page == 'bases' else '' }}">Bases</a>
       <a href="/swaps" class="{{ 'is-active' if active_page == 'swaps' else '' }}">Swaps</a>
-      <a href="#">Customize</a>
+      <a href="{{ url_for('storefront.customize') }}" class="{{ 'is-active' if active_page == 'customize' else '' }}">Customize</a>
       <a href="#">Gift Cards</a>
     </nav>
 
@@ -98,7 +98,7 @@
         <ul>
           <li><a href="/bases">Bases</a></li>
           <li><a href="/swaps">Swaps</a></li>
-          <li><a href="#">Customize</a></li>
+          <li><a href="{{ url_for('storefront.customize') }}">Customize</a></li>
           <li><a href="#">Gift Cards</a></li>
         </ul>
       </div>
@@ -139,7 +139,7 @@
 
 <script src="{{ url_for('static', filename='js/store-api.js') }}"></script>
 <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
-<script src="{{ url_for('static', filename='js/main.js', v='20261015-3') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js', v='20261016-1') }}"></script>
 {% block extra_scripts %}{% endblock %}
 </body>
 </html>
