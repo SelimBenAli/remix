@@ -147,6 +147,7 @@ function initSwapsCatalogue() {
   const artworkTransform = { x: 0, y: 0, z: 1 };
   let artworkDrag = null;
   let artworkInteracted = false;
+  let emptyBaseMessageDismissed = false;
   let bases = [], selectedCartBaseId = "", activeSwap = null, selectedBaseSize = "", swapQuantity = 1;
   const requestedArtist = new URLSearchParams(location.search).get("artist");
   let items = [];
@@ -219,6 +220,7 @@ function initSwapsCatalogue() {
     const base = bases.find((item) => String(item.id) === String(baseId));
     if (!base) return;
     selectedCartBaseId = String(base.id);
+    emptyBaseMessageDismissed = false;
     updateCartBaseShowroom();
     if (activeSwap) renderMixSizes();
     cartBasePicker?.close();
@@ -274,10 +276,14 @@ function initSwapsCatalogue() {
     const base = mixModal?.querySelector("[data-mix-base-image]");
     if (!patch || !mixStage || !patch.naturalWidth) return;
     if (!base || base.hidden) {
-      Object.assign(patch.style, { width: "76%", left: "12%", top: "12%" });
+      Object.assign(patch.style, {
+        width: "auto", height: "auto", maxWidth: "80%", maxHeight: "80%",
+        left: "50%", top: "50%", transform: "translate(-50%, -50%)",
+      });
       if (mixDropzone) mixDropzone.hidden = true;
       return;
     }
+    Object.assign(patch.style, { height: "", maxWidth: "none", maxHeight: "none", transform: "none" });
     if (!artworkBounds) artworkBounds = findArtworkBounds(patch);
     const mixArtDefault = getMixArtDefault();
     const defaultWidth = mixArtDefault.width / 100 * MIX_DESIGN_WIDTH;
@@ -338,13 +344,25 @@ function initSwapsCatalogue() {
     const priceLabel = mixModal.querySelector("[data-mix-price-label]");
     const stock = mixModal.querySelector("[data-mix-stock]");
     const error = mixModal.querySelector("[data-mix-error]");
+    const baseEmpty = mixModal.querySelector("[data-mix-base-empty]");
+    const caption = mixModal.querySelector(".mix-preview-caption");
     const showroomImage = base?.images?.find((image) => image.useInShowroom) || null;
     const baseShowroomUrl = showroomImage?.url || base?.imageUrl || "";
     if (baseImage) {
-      if (baseImage.getAttribute("src") !== baseShowroomUrl) baseImage.src = baseShowroomUrl;
-      baseImage.alt = base ? `${base.name} showroom preview` : "Selected base";
+      if (baseShowroomUrl && baseImage.getAttribute("src") !== baseShowroomUrl) baseImage.src = baseShowroomUrl;
+      else if (!baseShowroomUrl) baseImage.removeAttribute("src");
+      baseImage.alt = baseShowroomUrl && base ? `${base.name} showroom preview` : "";
+      baseImage.setAttribute("aria-hidden", String(!baseShowroomUrl));
       baseImage.hidden = !baseShowroomUrl;
     }
+    if (baseEmpty) {
+      baseEmpty.hidden = Boolean(baseShowroomUrl) || emptyBaseMessageDismissed;
+      const message = baseEmpty.querySelector("small");
+      if (message) message.textContent = base
+        ? "A preview image is not available for this base yet."
+        : "Choose a base from your bag to see the full mix.";
+    }
+    if (caption) caption.textContent = baseShowroomUrl ? "BASE + PANEL" : "SWAP PREVIEW";
     if (mixDropzone) mixDropzone.hidden = !baseShowroomUrl;
     const realSwapImage = activeSwap.originalImageUrl || activeSwap.images?.[0]?.originalUrl || activeSwap.imageUrl || "";
     if (artImage && artImage.getAttribute("src") !== realSwapImage) {
@@ -435,6 +453,7 @@ function initSwapsCatalogue() {
     Object.assign(artworkTransform, { x: 0, y: 0, z: 1 });
     artworkBounds = null;
     artworkInteracted = false;
+    emptyBaseMessageDismissed = false;
     swapQuantity = 1;
     if (swapQuantityValue) swapQuantityValue.textContent = "1";
     syncMixQuantityControls();
@@ -478,6 +497,11 @@ function initSwapsCatalogue() {
   mixModal?.querySelectorAll("[data-mix-close]").forEach((button) => button.addEventListener("click", () => {
     mixModal.hidden = true; document.body.classList.remove("no-scroll");
   }));
+  mixModal?.querySelector("[data-mix-base-empty-close]")?.addEventListener("click", () => {
+    emptyBaseMessageDismissed = true;
+    const message = mixModal.querySelector("[data-mix-base-empty]");
+    if (message) message.hidden = true;
+  });
   mixQuantityButtons.forEach((button) => button.addEventListener("click", () => {
     swapQuantity = Math.min(20, Math.max(1, swapQuantity + Number(button.dataset.mixQuantityChange)));
     if (swapQuantityValue) swapQuantityValue.textContent = String(swapQuantity);

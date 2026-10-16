@@ -2,7 +2,7 @@
 {% block title %}Swaps — REMIX{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/mix-modal.css', v='20261016-3') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/mix-modal.css', v='20261016-7') }}">
 {% endblock %}
 
 {% block content %}
@@ -82,6 +82,14 @@
             <div class="mix-preview-column">
                 <p class="mix-kicker">YOUR LOOK, IN THE MAKING</p>
                 <div class="mix-preview" data-mix-preview>
+                    <div class="mix-base-empty" data-mix-base-empty hidden>
+                        <span aria-hidden="true">✧</span>
+                        <div class="mix-base-empty-copy">
+                            <strong>Base preview</strong>
+                            <small>Choose a base from your bag to see the full mix.</small>
+                        </div>
+                        <button class="mix-base-empty-close" type="button" data-mix-base-empty-close aria-label="Dismiss base preview message">×</button>
+                    </div>
                     <img class="mix-art-image" data-mix-art-image alt="Selected swap artwork">
                     <img class="mix-base-image" data-mix-base-image alt="Selected base">
                     <div class="mix-dropzone" data-mix-dropzone aria-label="Drag to position the swap artwork"></div>
@@ -154,5 +162,5 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="{{ url_for('static', filename='js/catalogue.js', v='20261016-3') }}"></script>
+<script src="{{ url_for('static', filename='js/catalogue.js', v='20261016-8') }}"></script>
 {% endblock %}
