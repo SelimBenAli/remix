@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Customize — REMIX{% endblock %}
+{% block description %}Your REMIX customization studio is getting ready. Pick your base and art panels while we put the finishing touches on it.{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/customize.css', v='20261016-1') }}">
+{% endblock %}
+
+{% block content %}
+<section class="customize-coming-soon">
+  <div class="container customize-layout">
+    <div class="customize-copy">
+      <span class="customize-status"><span aria-hidden="true"></span> The style lab is warming up</span>
+      <p class="eyebrow">A little more drip is loading</p>
+      <h1>Your custom era is <span>coming soon.</span></h1>
+      <p class="lede">We’re building your personal remix studio. Soon you’ll be able to make a look that’s 100% you. For now, the bases and swaps are ready for their close-up.</p>
+      <div class="customize-progress" aria-label="Customization studio is in progress">
+        <span></span>
+      </div>
+      <p class="customize-progress-note">Currently cooking. Smells like a fit check.</p>
+      <div class="customize-actions">
+        <a class="btn btn-primary" href="/bases">Pick a base</a>
+        <a class="btn btn-outline" href="/swaps">Browse the swaps</a>
+      </div>
+    </div>
+
+    <div class="customize-art" aria-label="Your remix studio is coming soon">
+      <span class="customize-orbit customize-orbit-one" aria-hidden="true">✦</span>
+      <span class="customize-orbit customize-orbit-two" aria-hidden="true">✳</span>
+      <div class="customize-sticker">
+        <span class="customize-sticker-small">REMIX STYLE LAB</span>
+        <span class="customize-sticker-main">Loading<br>your look<span class="customize-ellipsis">...</span></span>
+        <span class="customize-sticker-icon" aria-hidden="true">✧</span>
+      </div>
+      <span class="customize-side-note">MAIN CHARACTER ENERGY<br>INCOMING</span>
+    </div>
+  </div>
+</section>
+{% endblock %}

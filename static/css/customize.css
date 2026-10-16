@@ -1,0 +1,30 @@
+.customize-coming-soon{position:relative;overflow:hidden;min-height:min(720px,calc(100svh - 150px));display:grid;align-items:center;padding:clamp(3.5rem,8vw,7rem) 0;background:radial-gradient(ellipse at 82% 48%,rgba(102,155,188,.17),transparent 38%),var(--cream)}
+.customize-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,.85fr);align-items:center;gap:clamp(2rem,7vw,6rem)}
+.customize-copy{position:relative;z-index:1;max-width:650px}
+.customize-status{display:inline-flex;align-items:center;gap:.55rem;margin-bottom:1.5rem;padding:.55rem .85rem;border:1px solid rgba(0,48,73,.15);border-radius:999px;background:#fffdf7;color:var(--navy);font-size:.72rem;font-weight:700;letter-spacing:.04em}
+.customize-status>span{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 0 4px rgba(193,18,31,.12);animation:customize-pulse 1.8s ease-in-out infinite}
+.customize-copy .eyebrow{margin-bottom:.65rem;color:var(--maroon);font-weight:800;letter-spacing:.1em;text-transform:uppercase}
+.customize-copy h1{max-width:12ch;margin-bottom:1rem;font-size:clamp(2.7rem,6.5vw,5.3rem);line-height:.98;letter-spacing:-.055em}
+.customize-copy h1 span{color:var(--maroon)}
+.customize-copy .lede{max-width:48ch;color:#4a3c37;line-height:1.75}
+.customize-progress{width:min(340px,100%);height:8px;margin-top:1.75rem;overflow:hidden;border-radius:99px;background:rgba(0,48,73,.12)}
+.customize-progress span{display:block;width:62%;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--maroon),var(--red),var(--steel));animation:customize-progress 2.8s ease-in-out infinite alternate}
+.customize-progress-note{margin:.55rem 0 1.6rem;color:#76695e;font-size:.78rem;font-weight:600}
+.customize-actions{display:flex;flex-wrap:wrap;gap:.75rem}
+.customize-actions .btn-outline{border-color:rgba(0,48,73,.35);color:var(--navy)}
+.customize-art{position:relative;display:grid;place-items:center;min-height:410px;isolation:isolate}
+.customize-sticker{position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;width:min(340px,75vw);aspect-ratio:1;border:2px solid var(--navy);border-radius:48% 52% 43% 57% / 52% 43% 57% 48%;padding:clamp(2rem,5vw,3.3rem);transform:rotate(-7deg);background:var(--navy);color:var(--cream);box-shadow:13px 14px 0 var(--steel);animation:customize-float 4s ease-in-out infinite}
+.customize-sticker-small{margin-bottom:.9rem;color:#b9d4e4;font-size:.65rem;font-weight:800;letter-spacing:.18em}
+.customize-sticker-main{font-size:clamp(2.2rem,5vw,3.5rem);font-weight:800;line-height:.98;letter-spacing:-.06em;text-transform:uppercase}
+.customize-ellipsis{color:#e27671}
+.customize-sticker-icon{position:absolute;right:16%;bottom:17%;display:grid;place-items:center;width:54px;height:54px;border-radius:50%;background:var(--cream);color:var(--maroon);font-size:2rem}
+.customize-orbit{position:absolute;z-index:-1;display:grid;place-items:center;width:62px;height:62px;border-radius:50%;background:var(--red);color:white;font-size:1.65rem;box-shadow:0 8px 24px rgba(120,0,0,.16)}
+.customize-orbit-one{top:10%;right:16%;transform:rotate(12deg)}
+.customize-orbit-two{bottom:12%;left:7%;width:48px;height:48px;background:var(--steel);font-size:1.25rem}
+.customize-side-note{position:absolute;right:0;bottom:10%;color:var(--maroon);font-size:.62rem;font-weight:800;line-height:1.5;letter-spacing:.12em;transform:rotate(5deg)}
+@keyframes customize-pulse{50%{box-shadow:0 0 0 7px rgba(193,18,31,.04)}}
+@keyframes customize-progress{to{width:82%}}
+@keyframes customize-float{50%{transform:rotate(-4deg) translateY(-8px)}}
+@media(max-width:760px){.customize-coming-soon{min-height:0;padding:3.5rem 0 4rem}.customize-layout{grid-template-columns:1fr;gap:1.8rem}.customize-status{margin-bottom:1.1rem}.customize-copy h1{max-width:11ch}.customize-art{min-height:300px}.customize-sticker{width:min(270px,68vw);padding:2rem}.customize-sticker-main{font-size:clamp(2.1rem,10vw,3rem)}.customize-orbit-one{top:6%;right:17%}.customize-orbit-two{bottom:8%;left:11%}.customize-side-note{right:5%;bottom:8%}}
+@media(max-width:420px){.customize-actions{display:grid}.customize-actions .btn{width:100%}.customize-art{min-height:270px}.customize-side-note{font-size:.53rem}}
+@media(prefers-reduced-motion:reduce){.customize-status>span,.customize-progress span,.customize-sticker{animation:none}}
