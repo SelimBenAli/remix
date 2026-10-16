@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}REMIX — Wearable Art, Swapped Anytime{% endblock %}</title>
+<meta name="description" content="{% block description %}Modular art panels you swap onto a base garment. Collect the art, wear it your way.{% endblock %}">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='20261015-5') }}">
+{% block extra_head %}{% endblock %}
+</head>
+<body class="{{ active_page|default('') }}-page">
+
+<a href="#main-content" class="visually-hidden">Skip to content</a>
+
+<header class="site-header">
+  <div class="container header-row">
+    <button class="nav-toggle" data-nav-toggle aria-label="Open menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+
+    <a href="/" class="logo-mark">
+      <img class="logo-placeholder" src="{{ url_for('static', filename='images/logo.jpg') }}" alt="REMIX logo">
+      REMIX
+    </a>
+
+    <nav class="main-nav" data-main-nav aria-label="Main">
+      <a href="/" class="{{ 'is-active' if active_page == 'home' else '' }}">Home</a>
+      <a href="/bases" class="{{ 'is-active' if active_page == 'bases' else '' }}">Bases</a>
+      <a href="/swaps" class="{{ 'is-active' if active_page == 'swaps' else '' }}">Swaps</a>
+      <a href="#">Customize</a>
+      <a href="#">Gift Cards</a>
+    </nav>
+
+    <div class="header-actions">
+      <button class="icon-btn" aria-label="Search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <button class="icon-btn" aria-label="Open cart" data-cart-open>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6h15l-1.5 9h-13z"/><path d="M6 6L4 2H2"/><circle cx="9" cy="21" r="1"/><circle cx="18" cy="21" r="1"/></svg>
+        <span class="cart-count" data-cart-count>0</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="nav-scrim" data-scrim></div>
+
+<!-- Cart drawer -->
+<div class="nav-scrim" data-cart-scrim></div>
+<aside class="cart-drawer" data-cart-drawer aria-label="Shopping cart">
+  <div class="cart-head">
+    <h2>Your Cart</h2>
+    <button class="icon-btn" aria-label="Close cart" data-cart-close>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="4" x2="20" y2="20"/><line x1="20" y1="4" x2="4" y2="20"/></svg>
+    </button>
+  </div>
+  <div class="cart-items" data-cart-items></div>
+  <div class="cart-foot">
+    <div class="cart-line"><span>Subtotal</span><span data-cart-subtotal>$0.00</span></div>
+    <div class="cart-line"><span>Shipping</span><span>Free</span></div>
+    <div class="cart-line total"><span>Total</span><span data-cart-total>$0.00</span></div>
+    <p class="cart-fine">30-Day Fit Guarantee. First exchange is free — return any base or panel within 30 days.</p>
+    <a class="btn btn-primary btn-block" href="/order">Checkout</a>
+  </div>
+</aside>
+
+<dialog class="order-confirm-dialog" data-order-confirm-dialog aria-labelledby="order-confirm-title">
+  <div class="order-confirm-content">
+    <span class="order-confirm-icon" aria-hidden="true">✓</span>
+    <p class="order-confirm-kicker">ORDER RECEIVED</p>
+    <h2 id="order-confirm-title">Thank you for your order.</h2>
+    <p>Your order has been sent. We’ll contact you soon to confirm it.</p>
+    <button class="btn btn-primary" type="button" data-order-confirm-close>Continue exploring</button>
+  </div>
+</dialog>
+
+<main id="main-content">
+{% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo-mark">
+          <img class="logo-placeholder" src="{{ url_for('static', filename='images/logo.jpg') }}" alt="REMIX logo">
+          REMIX
+        </div>
+        <p>Wearable art from real human artists. Collect the panels you love, wear them across REMIX bases, and swap anytime.</p>
+      </div>
+      <div class="footer-col">
+        <h5>Shop</h5>
+        <ul>
+          <li><a href="/bases">Bases</a></li>
+          <li><a href="/swaps">Swaps</a></li>
+          <li><a href="#">Customize</a></li>
+          <li><a href="#">Gift Cards</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Support</h5>
+        <ul>
+          <li><a href="#">Shipping &amp; Returns</a></li>
+          <li><a href="#">Contact Us</a></li>
+          <li><a href="#">FAQ</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Explore</h5>
+        <ul>
+          <li><a href="#">About Us</a></li>
+          <li><a href="#">Meet the Artists</a></li>
+          <li><a href="#">Reviews</a></li>
+        </ul>
+      </div>
+      <div class="footer-col footer-newsletter">
+        <h5>Newsletter</h5>
+        <p>Be first to know about new art drops and exclusive bundles.</p>
+        <form data-newsletter-form>
+          <label class="visually-hidden" for="footer-newsletter-email">Email address</label>
+          <input type="email" id="footer-newsletter-email" placeholder="Email" required>
+          <button type="submit">Join</button>
+        </form>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>REMIX® — made for people who change their mind. All rights reserved.</span>
+      <div class="payment-row">
+        <span>Visa</span><span>Mastercard</span><span>Amex</span><span>PayPal</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="{{ url_for('static', filename='js/store-api.js') }}"></script>
+<script src="{{ url_for('static', filename='js/cart.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js', v='20261015-3') }}"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

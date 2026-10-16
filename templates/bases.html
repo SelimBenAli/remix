@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Bases — REMIX{% endblock %}
+
+{% block content %}
+
+<section class="collection-hero">
+  <div class="container">
+    <div class="collection-hero-inner">
+      <p class="breadcrumb"><a href="/">Home</a> / Bases</p>
+      <h1>Your New Fav Jacket</h1>
+      <p class="lede">Unlock the canvas that will carry your future art collection. Every base ships with REMIX's swap hardware, ready for panels on day one.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section-tight">
+  <div class="container">
+
+    <div class="catalogue-categories-wrap">
+      <div class="chip-row" data-bases-filters aria-label="Filter bases by category" role="group"></div>
+    </div>
+    <div class="catalogue-toolbar bases-toolbar">
+      <div style="display:flex; align-items:center; gap:1rem;">
+        <span class="result-count" data-bases-count></span>
+        <select class="select-sort" data-bases-sort aria-label="Sort bases">
+          <option value="featured">Featured</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+          <option value="name-asc">Name: A–Z</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="product-grid" data-bases-grid></div>
+
+    <div class="load-more-wrap">
+      <button class="btn btn-outline" data-bases-more>Load More Bases</button>
+      <p class="load-status" data-bases-status></p>
+    </div>
+
+  </div>
+</section>
+
+<section class="section section-alt section-tight">
+  <div class="container split">
+    <div>
+      <p class="eyebrow">Built for panels</p>
+      <h2>One Base. Every Look.</h2>
+      <p class="lede">Every REMIX base ships with the swap hardware already installed, so your first art panel is ready to attach the moment it arrives.</p>
+      <a href="/swaps" class="btn btn-primary">Shop Art Panels</a>
+    </div>
+    <div class="split-media">Photo placeholder<br>(base garment, flat lay)</div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/catalogue.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ menu_label }}{% endblock %}
+{% block page_title %}{{ menu_label }}{% endblock %}
+
+{% block content %}
+<div class="content-panel">
+  <div class="panel-toolbar">
+    <span class="result-count" id="result-count"></span>
+    <div class="toolbar-actions">
+      <button class="btn btn-outline-secondary btn-icon" id="btn-export-csv">
+        <i class="bi bi-download"></i> Export CSV
+      </button>
+      {% if 'create' in actions %}
+      <label class="btn btn-outline-secondary btn-icon mb-0">
+        <i class="bi bi-upload"></i> Import CSV
+        <input type="file" id="btn-import-csv" accept=".csv,text/csv" hidden>
+      </label>
+      <button class="btn btn-primary btn-icon" id="btn-add">
+        <i class="bi bi-plus-lg"></i> Ajouter
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if search_fields %}
+  <form class="row row-cols-auto g-2 mb-4 align-items-end" id="search-form">
+    {% for field in search_fields %}
+    <div class="col">
+      <label class="form-label small text-muted mb-1">{{ field }}</label>
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+        <input type="text" class="form-control" name="{{ field }}" placeholder="{{ field }}">
+      </div>
+    </div>
+    {% endfor %}
+    <div class="col">
+      <button type="submit" class="btn btn-sm btn-primary btn-icon">
+        <i class="bi bi-funnel"></i> Filtrer
+      </button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-reset-search">
+        Réinitialiser
+      </button>
+    </div>
+  </form>
+  {% endif %}
+
+  {% if 'delete' in actions or 'update' in actions %}
+  <div class="alert alert-secondary d-none align-items-center justify-content-between py-2 mb-3" id="bulk-bar">
+    <span><strong id="bulk-count">0</strong> sélectionné(s)</span>
+    {% if 'update' in actions %}
+    <button type="button" class="btn btn-sm btn-outline-primary btn-icon" id="btn-bulk-update">
+      <i class="bi bi-pencil"></i> Modifier la sélection
+    </button>
+    {% endif %}
+    {% if 'delete' in actions %}
+    <button type="button" class="btn btn-sm btn-danger btn-icon" id="btn-bulk-delete">
+      <i class="bi bi-trash3"></i> Supprimer la sélection
+    </button>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          {% if 'delete' in actions or 'update' in actions %}
+          <th style="width: 2rem;"><input type="checkbox" class="form-check-input" id="select-all"></th>
+          {% endif %}
+          {% for field in list_fields %}
+          <th class="sortable-th" data-field="{{ field }}" role="button">
+            {{ field_labels[field] }}
+            <i class="bi sort-icon" data-field="{{ field }}"></i>
+          </th>
+          {% endfor %}
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mt-3">
+    <small class="text-muted" id="page-indicator"></small>
+    <div class="btn-group btn-group-sm">
+      <button type="button" class="btn btn-outline-secondary" id="btn-prev-page">
+        <i class="bi bi-chevron-left"></i> Précédent
+      </button>
+      <button type="button" class="btn btn-outline-secondary" id="btn-next-page">
+        Suivant <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="entity-modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="entity-modal-title">Ajouter</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="entity-form"></form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-primary btn-icon" id="btn-save">
+          <i class="bi bi-check-lg"></i> Enregistrer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.ENTITY_CONFIG = {
+    apiBase: {{ api_base | tojson }},
+    pk: {{ pk | tojson }},
+    listFields: {{ list_fields | tojson }},
+    insertFields: {{ insert_fields | tojson }},
+    updateFields: {{ update_fields | tojson }},
+    searchFields: {{ search_fields | tojson }},
+    actions: {{ actions | tojson }},
+    customActions: {{ custom_actions | tojson }},
+    foreignKeys: {{ foreign_keys | tojson }},
+  };
+</script>
+<script src="{{ url_for('static', filename='js/admin-table.js') }}"></script>
+{% endblock %}

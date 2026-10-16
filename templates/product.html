@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Product — REMIX{% endblock %}
+{% block description %}Product details from REMIX.{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/product-backup.css', v='20261015-9') }}">
+{% endblock %}
+
+{% block content %}
+<section class="product-shell" data-product-root data-product-kind="{{ product_kind }}" data-product-id="{{ product_id }}">
+  <div class="gallery">
+    <div class="gallery-main">
+      <div class="badge" data-product-badge hidden></div>
+      <img data-product-main-image alt="" hidden>
+      <p class="product-detail-image-empty" data-product-image-empty>Loading product image…</p>
+      <button class="gallery-arrow prev" data-product-prev type="button" aria-label="Previous image" hidden>‹</button>
+      <button class="gallery-arrow next" data-product-next type="button" aria-label="Next image" hidden>›</button>
+      <div class="gallery-counter" data-product-counter hidden></div>
+    </div>
+    <div class="thumbs" data-product-thumbnails aria-label="Product images"></div>
+  </div>
+
+  <aside class="product-info">
+    <div class="rating"><strong>4.9</strong> / 5 <span>★★★★★</span> <u>(530 reviews)</u></div>
+    <p class="eyebrow" data-product-category>Loading product…</p>
+    <h1 data-product-name>Loading product…</h1>
+    <p class="product-detail-artist" data-product-artist hidden></p>
+    <div class="price-row"><span class="price" data-product-price></span><span class="price-note">USD</span></div>
+
+    <div class="product-selector" data-size-row hidden>
+      <div class="selector-label"><strong>Select a Size</strong><span data-product-availability>In stock</span></div>
+      <div class="sizes" data-product-sizes role="group" aria-label="Choose a size"></div>
+      <button class="size-guide-link" data-size-guide-open type="button">Unisex Size Guide →</button>
+    </div>
+    <div class="product-no-size product-selector" data-no-size-row hidden><div class="selector-label"><strong>Available now</strong><span data-product-availability>In stock</span></div></div>
+    <input data-product-quantity type="hidden" value="1">
+    <div class="fit-note" data-fit-note hidden></div>
+
+    <div class="benefits">
+      <div><strong>Free Shipping</strong><span>On qualifying orders</span></div>
+      <div><strong>30-Day Returns</strong><span>Easy exchanges</span></div>
+      <div><strong>Modular System</strong><span>Swap your style anytime</span></div>
+    </div>
+    <p class="product-detail-message" data-product-message role="status" aria-live="polite"></p>
+    <button class="add-btn" data-product-add type="button" disabled>Add to bag</button>
+    <div class="option-box">
+      <button class="option active" data-product-step-base type="button"><span>1</span><div><b>Choose your base</b><small data-product-step-base-hint>Pick a size to continue</small></div></button>
+      <a class="option is-disabled" data-product-step-swaps href="/swaps" aria-disabled="true" tabindex="-1"><span>2</span><div><b>Choose your panels</b><small data-product-step-swaps-hint>Add this base to unlock swaps</small></div></a>
+    </div>
+  </aside>
+</section>
+
+<section class="details-section">
+  <div class="details-copy">
+    <div class="feature-strip" data-product-features></div>
+    <h2 data-details-title>Product details</h2>
+    <p data-product-description></p>
+    <ul class="spec-list" data-product-specs></ul>
+    <div class="trust-row" data-product-trust>
+      <div><b>Modular design.</b><span>Patented</span></div>
+      <div><b>Industry leading</b><span>materials.</span></div>
+      <div><b>4.9 Star</b><span>avg. rating</span></div>
+    </div>
+    <div class="product-accordions" data-product-accordions></div>
+  </div>
+</section>
+
+<section class="style-section">
+  <div class="section-heading"><p class="eyebrow">MORE WAYS TO STYLE</p><h2>One base. Endless looks.</h2><p>Swap the art or switch the base in seconds, so there’s always a new way to wear it.</p></div>
+  <div class="style-grid">
+    <div class="style-card"><div class="visual clean">REMIX<br><small>CLEAN</small></div><h3>Keep it clean</h3><p>Minimal base, maximum versatility.</p></div>
+    <div class="style-card"><div class="visual statement">REMIX<br><small>STATEMENT</small></div><h3>Make a statement</h3><p>Change the panel. Change the energy.</p></div>
+    <div class="style-card"><div class="visual custom">REMIX<br><small>CUSTOM</small></div><h3>Make it yours</h3><p>Build your own collection of interchangeable art.</p></div>
+  </div>
+</section>
+
+<section class="comparison-section">
+  <div class="section-heading"><p class="eyebrow">WHY SETTLE FOR ONE LOOK?</p><h2>More style. Less waste.</h2><p>Most brands lock you into one style. REMIX doesn’t.</p></div>
+  <div class="comparison">
+    <div class="compare-row compare-head"><span></span><strong>REMIX</strong><strong>TRADITIONAL</strong></div>
+    <div class="compare-row"><span>Modular</span><b>✓</b><b>—</b></div>
+    <div class="compare-row"><span>Cost for a new look</span><b>New art panel</b><b>New jacket</b></div>
+    <div class="compare-row"><span>Plain option</span><b>✓</b><b>✓</b></div>
+    <div class="compare-row"><span>Supports artists</span><b>✓</b><b>—</b></div>
+    <div class="compare-row"><span>Saves space</span><b>✓</b><b>—</b></div>
+    <div class="compare-row"><span>Easy cleaning</span><b>✓</b><b>—</b></div>
+  </div>
+</section>
+
+<section class="faq-section">
+  <div class="section-heading"><p class="eyebrow">FAQ</p><h2>Questions, answered.</h2></div>
+  <div class="faq-list" data-product-faq>
+    <details open><summary>Can I buy more panels later?</summary><p>Yes. Every REMIX base and art panel is designed to stay compatible with future additions.</p></details>
+    <details><summary>Is it comfortable?</summary><p data-faq-fit>Our modular hardware is designed to stay secure and unobtrusive while you wear it.</p></details>
+    <details><summary>How durable is the hardware?</summary><p>Our modular system is designed for frequent swaps and everyday wear.</p></details>
+    <details><summary>Can it be washed?</summary><p data-faq-care>Remove the art panel before washing the base cold. Spot-clean art panels when needed.</p></details>
+    <details><summary>Where do you ship to?</summary><p data-faq-shipping>Delivery times and rates depend on destination.</p></details>
+    <details><summary>How do you support artists?</summary><p>Original art panels are created by independent artists.</p></details>
+  </div>
+</section>
+
+<section class="reviews-section">
+  <div class="review-summary"><p class="eyebrow">REVIEWS</p><h2>4.9</h2><div class="stars">★★★★★</div><p>Based on 530 reviews</p>
+    <div class="rating-bars"><div><span>5</span><i><b style="width:93%"></b></i><span>93%</span></div><div><span>4</span><i><b style="width:6%"></b></i><span>6%</span></div><div><span>3</span><i><b style="width:1%"></b></i><span>1%</span></div><div><span>2</span><i><b style="width:0%"></b></i><span>0%</span></div><div><span>1</span><i><b style="width:1%"></b></i><span>1%</span></div></div>
+  </div>
+  <div class="review-list" data-product-reviews>
+    <article><div class="review-top"><b>REMIX customer</b><span>★★★★★</span></div><h3>Made for everyday wear</h3><p>Explore the collection and find a style that feels like you.</p></article>
+  </div>
+</section>
+
+<div class="mobile-buy" data-mobile-buy>
+  <div><small data-mobile-product-name></small><b data-mobile-product-price></b></div>
+  <button type="button" data-product-mobile-add disabled>SELECT SIZE</button>
+</div>
+
+<div class="modal" data-size-guide-modal hidden role="dialog" aria-modal="true" aria-labelledby="size-guide-title">
+  <div class="size-guide-backdrop" data-size-guide-close></div>
+  <div class="modal-card">
+    <button class="close-btn" data-size-guide-close type="button" aria-label="Close size guide">×</button>
+    <p class="eyebrow" data-size-guide-label>UNISEX SIZE GUIDE</p><h2 id="size-guide-title">HOW TO MEASURE</h2>
+    <div class="measure-grid" data-size-guide-help></div>
+    <div class="size-table-wrap"><div class="size-table"><table><thead data-size-guide-head></thead><tbody data-size-guide-body></tbody></table></div></div>
+    <p class="guide-note" data-size-guide-advice></p>
+  </div>
+</div>
+
+<dialog class="checkout-dialog" data-preorder-dialog aria-labelledby="preorder-title">
+  <form data-preorder-form>
+    <div class="checkout-head"><h2 id="preorder-title">Request a pre-order</h2><button type="button" class="icon-btn" data-preorder-close aria-label="Close">×</button></div>
+    <p data-preorder-message role="status"></p>
+    <p>Leave your details and we’ll contact you about this unavailable item.</p>
+    <label>Your name<input name="full_name" autocomplete="name" required maxlength="120"></label>
+    <label>Email<input name="email" type="email" autocomplete="email" required maxlength="190"></label>
+    <label>Note (optional)<input name="note" maxlength="1000"></label>
+    <button class="btn btn-primary btn-block" type="submit" data-preorder-submit>Send request</button>
+  </form>
+</dialog>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>window.PRODUCT_CONFIG = {{ {'kind': product_kind, 'id': product_id} | tojson }};</script>
+<script src="{{ url_for('static', filename='js/product.js', v='20261015-1') }}"></script>
+{% endblock %}

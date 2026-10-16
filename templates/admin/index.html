@@ -1,0 +1,67 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Tableau de bord{% endblock %}
+{% block page_title %}Tableau de bord{% endblock %}
+
+{% block content %}
+{% if socketio_enabled %}
+<section class="content-panel mb-4" aria-labelledby="operational-status-title">
+  <h2 class="h5 mb-3" id="operational-status-title">Operational status</h2>
+  <div class="d-flex flex-wrap gap-4 mb-4">
+    <div>Application <span class="badge text-bg-secondary" id="status-app">checking</span></div>
+    <div>Database <span class="badge text-bg-secondary" id="status-database">checking</span></div>
+    <div>Socket <span class="badge text-bg-secondary" id="status-socket">connecting</span></div>
+    <div>Admin connections <span class="badge text-bg-secondary" id="status-connections">0</span></div>
+  </div>
+  <h3 class="h6">Recent tasks</h3>
+  <ul class="list-group list-group-flush" id="task-status-list">
+    <li class="list-group-item text-muted" id="task-status-empty">No task updates yet.</li>
+  </ul>
+</section>
+{% endif %}
+<div class="content-panel">
+  <p class="text-muted mb-4">Choisis une section à gérer.</p>
+  <div class="index-grid">
+    {% for item in menu_items %}
+    <a class="index-tile" href="{{ item.url }}">{{ item.label }}</a>
+    {% else %}
+    <p class="text-muted">Aucune section n'est configurée pour apparaître ici (show_in_menu).</p>
+    {% endfor %}
+  </div>
+</div>
+{% if audit_enabled %}
+<section class="content-panel mt-4">
+  <div class="panel-toolbar"><h2 class="h5 mb-0">Audit history</h2><button class="btn btn-sm btn-outline-secondary" id="refresh-audit">Refresh</button></div>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle"><thead><tr><th>Time</th><th>Actor ID</th><th>Action</th><th>Model</th><th>Record</th></tr></thead>
+      <tbody id="audit-log-body"><tr><td colspan="5" class="text-muted">Loading audit history…</td></tr></tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+{% if audit_enabled %}
+<script>
+  async function refreshAuditLogs() {
+    const body = document.getElementById("audit-log-body");
+    try {
+      const rows = await apiRequest("/api/audit-logs?limit=100");
+      body.textContent = "";
+      rows.forEach((item) => {
+        const row = document.createElement("tr");
+        [new Date(item.created_at).toLocaleString(), item.actor_id != null ? item.actor_id : "System", item.action, item.model, item.record_id]
+          .forEach((value) => { const cell = document.createElement("td"); cell.textContent = value; row.appendChild(cell); });
+        body.appendChild(row);
+      });
+      if (!rows.length) body.innerHTML = '<tr><td colspan="5" class="text-muted">No audit entries yet.</td></tr>';
+    } catch (error) {
+      body.innerHTML = '<tr><td colspan="5" class="text-danger">Could not load audit history.</td></tr>';
+    }
+  }
+  document.getElementById("refresh-audit").addEventListener("click", refreshAuditLogs);
+  window.addEventListener("dashboard-update", refreshAuditLogs);
+  refreshAuditLogs();
+</script>
+{% endif %}
+{% endblock %}

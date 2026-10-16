@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ product.name if product is defined else 'Raven Denim Jacket' }} — Remix</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/product.css') }}">
+</head>
+<body>
+  <!-- Announcement
+  <div class="announcement">FREE SHIPPING ON ORDERS OVER $75 <span>•</span> 30-DAY RETURNS</div>-->
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <button class="icon-btn mobile-only" id="menuBtn" aria-label="Open menu">☰</button>
+      <a class="logo" href="/"><img class="backup-logo-img" src="{{ url_for('static', filename='images/logo.jpg') }}" alt="REMIX logo">REMIX<span>®</span></a>
+
+      <nav class="desktop-nav">
+        <a href="#">Bases</a>
+        <a href="#">Swaps</a>
+        <a href="#">Customize</a>
+        <a href="#">Gift Cards</a>
+      </nav>
+
+      <div class="header-actions">
+        <button class="icon-btn" id="searchBtn" aria-label="Search">⌕</button>
+        <button class="icon-btn desktop-login">Log in</button>
+        <button class="bag-btn" id="cartBtn" aria-label="Open cart">
+          Bag <span id="cartCount">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Search -->
+  <div class="search-panel" id="searchPanel">
+    <input id="searchInput" type="search" placeholder="Search Remix">
+  </div>
+
+  <!-- Mobile menu -->
+  <aside class="mobile-menu" id="mobileMenu">
+    <button class="close-btn" id="menuClose">×</button>
+    <a href="#">Bases</a>
+    <a href="#">Swaps</a>
+    <a href="#">Customize</a>
+    <a href="#">Gift Cards</a>
+    <a href="#">Log in</a>
+  </aside>
+  <div class="overlay" id="overlay"></div>
+
+  <main>
+    <!-- Product -->
+    <section class="product-shell">
+      <div class="gallery">
+        <div class="gallery-main">
+          <div class="badge">BEST SELLER</div>
+          <img id="mainImage" src="https://swapwear.com/cdn/shop/files/raven-swapwear-jacket-front-panel.webp?v=1776110680&width=900"
+               alt="Raven Denim Jacket">
+          <button class="gallery-arrow prev" id="prevImg">‹</button>
+          <button class="gallery-arrow next" id="nextImg">›</button>
+          <div class="gallery-counter"><span id="currentImage">1</span> / <span id="imageTotal">9</span></div>
+        </div>
+
+        <div class="thumbs" id="thumbs"></div>
+      </div>
+
+      <aside class="product-info">
+        <div class="rating"><strong>4.9</strong> / 5 <span>★★★★★</span> <u>(530 reviews)</u></div>
+        <p class="eyebrow">BASE • OG DENIM JACKET • UNISEX</p>
+        <h1>Raven Denim Jacket</h1>
+
+        <div class="price-row">
+          <span class="price">$119.00</span>
+          <span class="price-note">USD</span>
+        </div>
+
+        <div class="product-selector">
+          <div class="selector-label"><strong>Select a Size</strong><span id="stockMessage">In stock</span></div>
+          <div class="sizes" id="sizes">
+            <button data-size="XS">XS</button>
+            <button data-size="S">S</button>
+            <button data-size="M">M</button>
+            <button data-size="L">L</button>
+            <button data-size="XL">XL</button>
+            <button data-size="2XL">2XL</button>
+            <button data-size="3XL">3XL</button>
+          </div>
+          <button class="size-guide-link" id="sizeGuideBtn">Unisex Size Guide →</button>
+        </div>
+
+        <div class="fit-note">😌 If the size you ordered doesn't fit, exchange it for free!</div>
+
+        <div class="benefits">
+          <div><strong>Free Shipping</strong><span>On qualifying orders</span></div>
+          <div><strong>30-Day Returns</strong><span>Easy exchanges</span></div>
+          <div><strong>Modular System</strong><span>Swap your style anytime</span></div>
+        </div>
+
+        <button class="add-btn" id="addBtn">SELECT A SIZE</button>
+
+        <div class="option-box">
+          <button class="option active"><span>1</span><div><b>Choose your base</b><small>Pick a size to continue</small></div></button>
+          <button class="option"><span>2</span><div><b>Choose your panels</b><small>Next step</small></div></button>
+        </div>
+      </aside>
+    </section>
+
+    <!-- Details -->
+    <section class="details-section">
+      <div class="details-copy">
+        <div class="feature-strip">
+          <span>FAST & EASY</span><span>COMFORTABLE</span><span>MADE TO LAST</span><span>PATENTED</span><span>UNISEX</span>
+        </div>
+
+        <h2>Raven Denim Jacket</h2>
+        <p>With a unisex fit and subtle drop shoulder, this mid-weight denim jacket molds to your body over time. Designed for seamless modular art swaps, it features four functional pockets, easy snap buttons, and adjustable waist closures.</p>
+
+        <ul class="spec-list">
+          <li>Made from 12oz 100% pre-shrunk cotton denim</li>
+          <li>x2 Medium front side pockets</li>
+          <li>x2 Large inside pockets</li>
+          <li>Adjustable waist slide closures</li>
+          <li>Custom quiet snap buttons</li>
+          <li>Precisely crafted with 10 stitches per inch</li>
+          <li>100% Vegan paper leather brand label</li>
+          <li>Includes x1 blank denim swap</li>
+        </ul>
+
+        <div class="trust-row">
+          <div><b>Modular design.</b><span>Patented</span></div>
+          <div><b>Industry leading</b><span>materials.</span></div>
+          <div><b>4.9 Star</b><span>avg. rating</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- More ways -->
+    <section class="style-section">
+      <div class="section-heading">
+        <p class="eyebrow">MORE WAYS TO STYLE</p>
+        <h2>One base. Endless looks.</h2>
+        <p>Swap the art or switch the base in seconds, so there’s always a new way to wear it.</p>
+      </div>
+      <div class="style-grid">
+        <div class="style-card"><div class="visual clean">REMIX<br><small>CLEAN</small></div><h3>Keep it clean</h3><p>Minimal base, maximum versatility.</p></div>
+        <div class="style-card"><div class="visual statement">REMIX<br><small>STATEMENT</small></div><h3>Make a statement</h3><p>Change the panel. Change the energy.</p></div>
+        <div class="style-card"><div class="visual custom">REMIX<br><small>CUSTOM</small></div><h3>Make it yours</h3><p>Build your own collection of interchangeable art.</p></div>
+      </div>
+    </section>
+
+    <!-- Comparison -->
+    <section class="comparison-section">
+      <div class="section-heading">
+        <p class="eyebrow">WHY SETTLE FOR ONE LOOK?</p>
+        <h2>More style. Less waste.</h2>
+        <p>Most brands lock you into one style. Remix doesn't.</p>
+      </div>
+      <div class="comparison">
+        <div class="compare-row compare-head"><span></span><strong>REMIX</strong><strong>TRADITIONAL</strong></div>
+        <div class="compare-row"><span>Modular</span><b>✓</b><b>—</b></div>
+        <div class="compare-row"><span>Cost for a new look</span><b>New art panel</b><b>New jacket</b></div>
+        <div class="compare-row"><span>Plain option</span><b>✓</b><b>✓</b></div>
+        <div class="compare-row"><span>Supports artists</span><b>✓</b><b>—</b></div>
+        <div class="compare-row"><span>Saves space</span><b>✓</b><b>—</b></div>
+        <div class="compare-row"><span>Easy cleaning</span><b>✓</b><b>—</b></div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq-section">
+      <div class="section-heading"><p class="eyebrow">FAQ</p><h2>Questions, answered.</h2></div>
+      <div class="faq-list">
+        <details open><summary>Can I buy more panels later?</summary><p>Yes. Every Remix base and art panel is designed to stay compatible with future additions.</p></details>
+        <details><summary>Is it comfortable?</summary><p>Our modular hardware is designed to stay secure and unobtrusive while you wear it.</p></details>
+        <details><summary>How durable is the hardware?</summary><p>The system is built for frequent swaps and everyday wear without losing its shape or strength.</p></details>
+        <details><summary>Can it be washed?</summary><p>Remove the art panel before washing the base cold. Spot-clean art panels when needed.</p></details>
+        <details><summary>Where do you ship to?</summary><p>Remix ships internationally. Delivery times and rates depend on destination.</p></details>
+        <details><summary>How do you support artists?</summary><p>Original art panels can be created by independent artists, with a portion of each eligible sale supporting the artist.</p></details>
+      </div>
+    </section>
+
+    <!-- Reviews -->
+    <section class="reviews-section">
+      <div class="review-summary">
+        <p class="eyebrow">REVIEWS</p>
+        <h2>4.9</h2>
+        <div class="stars">★★★★★</div>
+        <p>Based on 530 reviews</p>
+        <div class="rating-bars">
+          <div><span>5</span><i><b style="width:93%"></b></i><span>93%</span></div>
+          <div><span>4</span><i><b style="width:6%"></b></i><span>6%</span></div>
+          <div><span>3</span><i><b style="width:1%"></b></i><span>1%</span></div>
+          <div><span>2</span><i><b style="width:0%"></b></i><span>0%</span></div>
+          <div><span>1</span><i><b style="width:1%"></b></i><span>1%</span></div>
+        </div>
+      </div>
+
+      <div class="review-list">
+        <article><div class="review-top"><b>Christopher C.</b><span>★★★★★</span></div><h3>Couchtacular!</h3><p>I was very impressed with the quality and the removable custom patch. A wonderfully unique product!</p></article>
+        <article><div class="review-top"><b>Jess V.R.</b><span>★★★★★</span></div><h3>Great material quality and prints</h3><p>Incredibly impressed and happy. The quality and the art make it easy to keep building a collection.</p></article>
+        <article><div class="review-top"><b>Sarah W.</b><span>★★★★★</span></div><h3>What a perfectly ingenious idea!</h3><p>I love a denim jacket with a statement back. The ability to swap designs makes it even better.</p></article>
+        <article><div class="review-top"><b>Kaycee S.</b><span>★★★★★</span></div><h3>Perfect style and superb</h3><p>Perfect style and superb quality!</p></article>
+      </div>
+    </section>
+  </main>
+
+  <!-- Size guide -->
+  <div class="modal" id="sizeModal">
+    <div class="modal-card">
+      <button class="close-btn" id="sizeClose">×</button>
+      <p class="eyebrow">UNISEX SIZE GUIDE</p>
+      <h2>HOW TO MEASURE</h2>
+      <div class="measure-grid">
+        <div><b>Chest</b><p>Measure around the widest part of your chest.</p></div>
+        <div><b>Waist</b><p>Measure around the narrowest part of your torso.</p></div>
+        <div><b>Hips</b><p>Measure around the fullest part of your hips.</p></div>
+      </div>
+      <div class="size-table">
+        <div><b>Size</b><b>Chest</b><b>Length</b></div>
+        <div><span>XS</span><span>36–38"</span><span>25"</span></div>
+        <div><span>S</span><span>38–40"</span><span>26"</span></div>
+        <div><span>M</span><span>40–42"</span><span>27"</span></div>
+        <div><span>L</span><span>42–44"</span><span>28"</span></div>
+        <div><span>XL</span><span>44–46"</span><span>29"</span></div>
+      </div>
+      <p class="guide-note"><b>Mens:</b> Go with your usual size.<br><b>Womens:</b> Size down from your usual.</p>
+    </div>
+  </div>
+
+  <!-- Cart -->
+  <aside class="cart-drawer" id="cartDrawer">
+    <div class="cart-head"><h2>CART</h2><button class="close-btn" id="cartClose">×</button></div>
+    <div class="cart-body" id="cartBody">
+      <div class="empty-cart">Your bag is empty.</div>
+    </div>
+    <div class="cart-footer">
+      <div><span>Subtotal</span><strong id="subtotal">$0.00 USD</strong></div>
+      <div><span>Shipping</span><strong>Free</strong></div>
+      <hr>
+      <div class="total"><span>Total</span><strong id="total">$0.00 USD</strong></div>
+      <button class="checkout-btn">CHECKOUT</button>
+      <p>Secure checkout • Demo only</p>
+    </div>
+  </aside>
+
+  <div class="mobile-buy" id="mobileBuy">
+    <div><small>Raven Denim Jacket</small><b>$119.00</b></div>
+    <button id="mobileAdd">SELECT SIZE</button>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/product.js') }}"></script>
+</body>
+</html>

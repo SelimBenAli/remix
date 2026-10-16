@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Admin{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+  <div class="shell">
+    <nav class="sidebar">
+      <div class="brand">
+        <img class="brand-mark" src="{{ url_for('static', filename='images/logo.jpg') }}" alt="REMIX logo">
+        <span class="brand-name">Admin</span>
+      </div>
+      <div class="nav-label">Données</div>
+      <ul class="nav-list">
+        {% for item in menu_items %}
+        <li>
+          <a class="nav-link {% if active == item.key %}active{% endif %}" href="{{ item.url }}">{{ item.label }}</a>
+        </li>
+        {% endfor %}
+      </ul>
+      <div class="sidebar-footer">
+        {% if auth_enabled %}
+        <a href="{{ url_for('auth.logout') }}" class="logout-link">Se déconnecter</a>
+        {% endif %}
+      </div>
+    </nav>
+
+    <div class="main-column">
+      <header class="topbar">
+        <h1 class="page-title">{% block page_title %}Tableau de bord{% endblock %}</h1>
+      </header>
+
+      <main class="content-area">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <!-- Conteneur de toasts, partagé par toutes les pages (voir showToast() dans api.js) -->
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container" style="z-index: 1080;"></div>
+
+  <!-- Modale de confirmation générique, partagée (voir confirmAction() dans api.js) -->
+  <div class="modal fade" id="confirm-modal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Confirmer</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body" id="confirm-modal-body">Confirmer cette action ?</div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="button" class="btn btn-danger" id="confirm-modal-ok">Confirmer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  {% if csrf_token %}
+  <script>window.CSRF_TOKEN = {{ csrf_token | tojson }};</script>
+  {% endif %}
+  <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+  {% if socketio_enabled %}
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    window.adminSocket = io();
+    const setStatusBadge = function (id, value) {
+      const badge = document.getElementById(id);
+      if (!badge) return;
+      badge.textContent = value;
+      badge.className = "badge " + (value === "online" || value === "connected" ? "text-bg-success" : "text-bg-danger");
+    };
+    const renderTaskStatus = function (task) {
+      const list = document.getElementById("task-status-list");
+      if (!list || !task) return;
+      const empty = document.getElementById("task-status-empty");
+      if (empty) empty.remove();
+      let row = document.getElementById("task-status-" + task.task_id);
+      if (!row) {
+        row = document.createElement("li");
+        row.id = "task-status-" + task.task_id;
+        row.className = "list-group-item d-flex justify-content-between gap-3";
+        list.prepend(row);
+      }
+      row.textContent = "";
+      const label = document.createElement("span");
+      label.textContent = task.task_id + (task.message ? " — " + task.message : "");
+      const state = document.createElement("span");
+      state.className = "badge " + (["completed", "success"].includes(task.status) ? "text-bg-success" : (["failed", "error"].includes(task.status) ? "text-bg-danger" : "text-bg-secondary"));
+      state.textContent = task.status;
+      row.append(label, state);
+    };
+    window.adminSocket.on("connect", function () {
+      setStatusBadge("status-socket", "connected");
+      window.adminSocket.emit("request_status");
+    });
+    window.adminSocket.on("disconnect", function () { setStatusBadge("status-socket", "disconnected"); });
+    window.adminSocket.on("operational_status", function (status) {
+      setStatusBadge("status-app", status.app || "unknown");
+      setStatusBadge("status-database", status.database || "unknown");
+      const count = document.getElementById("status-connections");
+      if (count) count.textContent = status.socket_connections != null ? status.socket_connections : "0";
+      (status.tasks || []).forEach(renderTaskStatus);
+    });
+    window.adminSocket.on("task_status", function (task) {
+      renderTaskStatus(task);
+      showToast("Task " + task.task_id + ": " + task.status, task.status === "failed" ? "danger" : "info");
+    });
+    window.adminSocket.on("dashboard_update", function (event) {
+      showToast(event.message || "Dashboard data changed", "info");
+      window.dispatchEvent(new CustomEvent("dashboard-update", { detail: event }));
+    });
+  </script>
+  {% endif %}
+  {% block scripts %}{% endblock %}
+</body>
+</html>

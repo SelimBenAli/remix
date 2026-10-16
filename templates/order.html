@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Your Bag &amp; Delivery — REMIX{% endblock %}
+{% block description %}Review your REMIX order and enter your delivery details.{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/order.css', v='20261015-1') }}">
+{% endblock %}
+
+{% block content %}
+<section class="order-page">
+  <div class="container order-container">
+    <nav class="order-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><span>Your bag</span></nav>
+    <header class="order-heading">
+      <p class="eyebrow">ALMOST YOURS</p>
+      <h1>Your bag &amp; delivery</h1>
+      <p>Review your pieces and tell us where to send them. Pay when your order arrives.</p>
+    </header>
+
+    <div class="order-layout" data-order-layout>
+      <section class="order-card order-items-card" aria-labelledby="order-items-title">
+        <div class="order-card-heading"><div><p class="eyebrow">YOUR SELECTION</p><h2 id="order-items-title">Order summary</h2></div><span class="order-item-count" data-order-count>0 items</span></div>
+        <div class="order-items" data-order-items><div class="order-loading">Loading your bag…</div></div>
+        <div class="order-empty" data-order-empty hidden>
+          <span class="order-empty-icon">✦</span><h3>Your bag is waiting for a little art.</h3>
+          <p>Add a base or a swap and come back to complete your order.</p>
+          <div><a class="btn btn-outline" href="/bases">Explore bases</a><a class="btn btn-outline" href="/swaps">Explore swaps</a></div>
+        </div>
+        <div class="order-totals" data-order-totals>
+          <div><span>Subtotal</span><strong data-order-subtotal>$0.00</strong></div>
+          <div><span>Shipping</span><strong>Free</strong></div>
+          <div class="order-grand-total"><span>Total</span><strong data-order-total>$0.00</strong></div>
+        </div>
+        <p class="order-return-note">Easy exchanges, thoughtful shipping, and wearable art made by independent artists.</p>
+      </section>
+
+      <section class="order-card delivery-card" aria-labelledby="delivery-title">
+        <div class="order-card-heading"><div><p class="eyebrow">DELIVERY DETAILS</p><h2 id="delivery-title">Where should we send it?</h2></div><span class="delivery-step">01</span></div>
+        <p class="delivery-intro">We’ll contact you to confirm your order and delivery details.</p>
+        <form class="delivery-form" data-order-form>
+          <p class="order-form-message" data-order-message role="alert" aria-live="polite"></p>
+          <label class="order-field order-field-full">Full name<input name="full_name" autocomplete="name" maxlength="120" placeholder="Your full name" required></label>
+          <label class="order-field">Email address<input name="email" type="email" autocomplete="email" maxlength="190" placeholder="you@example.com" required></label>
+          <label class="order-field">Phone number<input name="phone" type="tel" autocomplete="tel" maxlength="32" placeholder="Your phone number" required></label>
+          <label class="order-field order-field-full">Delivery address<input name="address" autocomplete="street-address" maxlength="255" placeholder="Street and house number" required></label>
+          <label class="order-field order-field-full">Region / city<input name="region" autocomplete="address-level1" maxlength="120" placeholder="City, region or area" required></label>
+          <div class="payment-note"><span class="payment-note-icon" aria-hidden="true">▣</span><div><strong>Pay when your order arrives</strong><span>No online payment needed. Payment is collected on delivery.</span></div></div>
+          <button class="btn btn-primary btn-block order-submit" type="submit" data-order-submit disabled><span>Place order</span><span aria-hidden="true">→</span></button>
+          <p class="order-terms">By placing your order, you agree that we may contact you about delivery.</p>
+        </form>
+      </section>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/order.js', v='20261015-1') }}"></script>
+{% endblock %}

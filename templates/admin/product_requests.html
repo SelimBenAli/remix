@@ -1,0 +1,24 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ menu_label }}{% endblock %}
+{% block page_title %}{{ menu_label }}{% endblock %}
+
+{% block content %}
+<div class="content-panel">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr><th>Date</th><th>Product</th><th>Kind</th><th>Size</th><th>Qty</th><th>Customer</th><th>Email</th><th>Note</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for item in requests %}
+        <tr>
+          <td>{{ item.created_at.strftime('%Y-%m-%d %H:%M') }}</td><td>{{ item.product_name }}</td>
+          <td>{{ item.kind }}</td><td>{{ item.size or '—' }}</td><td>{{ item.quantity }}</td>
+          <td>{{ item.full_name }}</td><td><a href="mailto:{{ item.email }}">{{ item.email }}</a></td>
+          <td>{{ item.note or '—' }}</td><td>{{ item.status }}</td>
+        </tr>
+        {% else %}<tr><td colspan="9" class="text-center text-muted py-4">No requests yet.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
