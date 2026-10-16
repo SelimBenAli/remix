@@ -945,7 +945,14 @@
         if (item[field]) {
           const hint = document.createElement("div");
           hint.className = "form-text";
-          hint.innerHTML = `Fichier actuel : <a href="/uploads/${item[field]}" target="_blank">voir</a> (laisser vide pour ne pas changer)`;
+          const label = document.createTextNode("Fichier actuel : ");
+          const link = document.createElement("a");
+          const safePath = String(item[field]).split("/").map(encodeURIComponent).join("/");
+          link.href = "/uploads/" + safePath;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = "voir";
+          hint.append(label, link, document.createTextNode(" (laisser vide pour ne pas changer)"));
           input.insertAdjacentElement("afterend", hint);
         }
       } else {
@@ -1240,7 +1247,12 @@
 
   function toCsv(rows) {
     const headers = cfg.listFields;
-    const escape = (v) => `"${String(v != null ? v : "").replace(/"/g, '""')}"`;
+    const escape = (v) => {
+      let value = String(v != null ? v : "");
+      // Prevent spreadsheet formula execution when an exported field is opened.
+      if (/^[\s\u0000-\u001f]*[=+@-]/.test(value)) value = "'" + value;
+      return `"${value.replace(/"/g, '""')}"`;
+    };
     const displayHeaders = headers.map((field) => (cfg.listFieldLabels && cfg.listFieldLabels[field]) || field.replaceAll("_", " "));
     const lines = [displayHeaders.map(escape).join(",")];
     rows.forEach((row) => {

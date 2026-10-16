@@ -88,7 +88,10 @@ def login_required(view_func):
     """Protège une page du dashboard admin (cookie de session Flask)."""
     @wraps(view_func)
     def wrapper(*args, **kwargs):
-        if not session.get("user_id"):
+        user_id = session.get("user_id")
+        user = AuthenticationModel.get_or_none(getattr(AuthenticationModel, AUTH_MODEL_PK) == user_id) if user_id else None
+        if user is None or not getattr(user, "is_active", True) or str(getattr(user, AUTH_ROLE_FIELD, None)) != "admin":
+            session.clear()
             return redirect(url_for("auth.login_page", next=request.path))
         return view_func(*args, **kwargs)
     return wrapper
@@ -105,7 +108,7 @@ def role_required(allowed_roles):
             user = AuthenticationModel.get_or_none(
                 getattr(AuthenticationModel, AUTH_MODEL_PK) == user_id
             )
-            if user is None or str(getattr(user, AUTH_ROLE_FIELD, None)) not in allowed:
+            if user is None or not getattr(user, "is_active", True) or str(getattr(user, AUTH_ROLE_FIELD, None)) not in allowed:
                 return jsonify({"error": "Insufficient permissions"}), 403
             return view_func(*args, **kwargs)
         return wrapper

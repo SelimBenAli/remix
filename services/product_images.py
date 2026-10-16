@@ -108,6 +108,17 @@ def validate_image_uploads(files):
         upload.stream.seek(0)
         if size > MAX_IMAGE_BYTES:
             raise ValueError(f"Each image must be 10 MB or smaller: '{upload.filename}'")
+        header = upload.stream.read(64)
+        upload.stream.seek(0)
+        valid_signature = (
+            (extension in {".jpg", ".jpeg"} and header.startswith(b"\xff\xd8\xff")) or
+            (extension == ".png" and header.startswith(b"\x89PNG\r\n\x1a\n")) or
+            (extension == ".gif" and header.startswith((b"GIF87a", b"GIF89a"))) or
+            (extension == ".webp" and len(header) >= 12 and header[:4] == b"RIFF" and header[8:12] == b"WEBP") or
+            (extension == ".avif" and len(header) >= 12 and header[4:8] == b"ftyp" and (b"avif" in header[:32] or b"avis" in header[:32]))
+        )
+        if not valid_signature:
+            raise ValueError(f"'{upload.filename}' does not contain a valid {extension.lstrip('.').upper()} image")
 
 
 def save_product_images(product, files, remove_ids=()):

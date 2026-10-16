@@ -15,7 +15,7 @@ from services.artist_service import (
     delete_artist,
     search_artists
 )
-from auth import token_required
+from auth import token_required, role_required
 
 
 # Champs jamais renvoyés dans les réponses JSON (ex: mot de passe hashé).
@@ -87,6 +87,7 @@ def _parse_incoming_data():
 
 @artist_bp.route("/artists", methods=["POST"])
 @token_required
+@role_required(["admin"])
 def create_artist_view():
     data = _parse_incoming_data()
     instance, errors = create_artist(data)
@@ -99,6 +100,7 @@ def create_artist_view():
 
 @artist_bp.route("/artists", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def get_all_artists_view():
     page, per_page, sort, order = _pagination_params()
     result = get_all_artists(page=page, per_page=per_page, sort=sort, order=order)
@@ -107,6 +109,7 @@ def get_all_artists_view():
 
 @artist_bp.route("/artists/search", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def search_artists_view():
     page, per_page, sort, order = _pagination_params()
     result = search_artists(request.args, page=page, per_page=per_page, sort=sort, order=order)
@@ -115,6 +118,7 @@ def search_artists_view():
 
 @artist_bp.route("/artists/<int:id>", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def get_artist_view(id):
     instance = get_artist_by_id(id)
     if instance is None:
@@ -124,6 +128,7 @@ def get_artist_view(id):
 
 @artist_bp.route("/artists/<int:id>", methods=["PUT"])
 @token_required
+@role_required(["admin"])
 def update_artist_view(id):
     data = _parse_incoming_data()
     instance, errors = update_artist(id, data)
@@ -137,6 +142,7 @@ def update_artist_view(id):
 
 @artist_bp.route("/artists/<int:id>", methods=["DELETE"])
 @token_required
+@role_required(["admin"])
 def delete_artist_view(id):
     ok = delete_artist(id)
     if not ok:

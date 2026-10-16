@@ -15,7 +15,7 @@ from services.cart_item_service import (
     delete_cart_item,
     search_cart_items
 )
-from auth import token_required
+from auth import token_required, role_required
 
 
 # Champs jamais renvoyés dans les réponses JSON (ex: mot de passe hashé).
@@ -87,6 +87,7 @@ def _parse_incoming_data():
 
 @cart_item_bp.route("/cart_items", methods=["POST"])
 @token_required
+@role_required(["admin"])
 def create_cart_item_view():
     data = _parse_incoming_data()
     instance, errors = create_cart_item(data)
@@ -99,6 +100,7 @@ def create_cart_item_view():
 
 @cart_item_bp.route("/cart_items", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def get_all_cart_items_view():
     page, per_page, sort, order = _pagination_params()
     result = get_all_cart_items(page=page, per_page=per_page, sort=sort, order=order)
@@ -107,6 +109,7 @@ def get_all_cart_items_view():
 
 @cart_item_bp.route("/cart_items/search", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def search_cart_items_view():
     page, per_page, sort, order = _pagination_params()
     result = search_cart_items(request.args, page=page, per_page=per_page, sort=sort, order=order)
@@ -115,6 +118,7 @@ def search_cart_items_view():
 
 @cart_item_bp.route("/cart_items/<int:id>", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def get_cart_item_view(id):
     instance = get_cart_item_by_id(id)
     if instance is None:
@@ -124,6 +128,7 @@ def get_cart_item_view(id):
 
 @cart_item_bp.route("/cart_items/<int:id>", methods=["PUT"])
 @token_required
+@role_required(["admin"])
 def update_cart_item_view(id):
     data = _parse_incoming_data()
     instance, errors = update_cart_item(id, data)
@@ -137,6 +142,7 @@ def update_cart_item_view(id):
 
 @cart_item_bp.route("/cart_items/<int:id>", methods=["DELETE"])
 @token_required
+@role_required(["admin"])
 def delete_cart_item_view(id):
     ok = delete_cart_item(id)
     if not ok:

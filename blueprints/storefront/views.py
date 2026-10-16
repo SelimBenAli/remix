@@ -9,6 +9,7 @@ from flask import abort, jsonify, render_template, request, session
 
 from . import storefront_bp
 from services import storefront_service as store
+from extensions import limiter
 
 
 def _session_key():
@@ -100,6 +101,7 @@ def cart_bases_get():
 
 
 @storefront_bp.route("/store/cart/items", methods=["POST"])
+@limiter.limit("60 per minute")
 def cart_add():
     data = request.get_json(silent=True) or {}
     result, errors = store.add_to_cart(
@@ -109,6 +111,7 @@ def cart_add():
 
 
 @storefront_bp.route("/store/cart/bundle", methods=["POST"])
+@limiter.limit("60 per minute")
 def cart_add_bundle():
     data = request.get_json(silent=True) or {}
     result, errors = store.add_bundle_to_cart(
@@ -119,6 +122,7 @@ def cart_add_bundle():
 
 
 @storefront_bp.route("/store/cart/items/<int:item_id>", methods=["PATCH"])
+@limiter.limit("60 per minute")
 def cart_update(item_id):
     data = request.get_json(silent=True) or {}
     result, errors = store.set_cart_item_quantity(_session_key(), item_id, data.get("quantity"))
@@ -126,18 +130,21 @@ def cart_update(item_id):
 
 
 @storefront_bp.route("/store/cart/items/<int:item_id>", methods=["DELETE"])
+@limiter.limit("60 per minute")
 def cart_remove(item_id):
     result, errors = store.remove_cart_item(_session_key(), item_id)
     return _result(result, errors)
 
 
 @storefront_bp.route("/store/checkout", methods=["POST"])
+@limiter.limit("10 per hour")
 def checkout():
     result, errors = store.checkout(_session_key(), request.get_json(silent=True) or {})
     return _result(result, errors, 201)
 
 
 @storefront_bp.route("/store/product-requests", methods=["POST"])
+@limiter.limit("10 per hour")
 def product_request():
     result, errors = store.create_product_request(request.get_json(silent=True) or {})
     return _result(result, errors, 201)
@@ -145,6 +152,7 @@ def product_request():
 
 # ----------------------------- newsletter ----------------------------------
 @storefront_bp.route("/store/newsletter", methods=["POST"])
+@limiter.limit("10 per hour")
 def newsletter():
     data = request.get_json(silent=True) or {}
     result, errors = store.subscribe(data.get("email"))

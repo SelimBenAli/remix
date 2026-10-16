@@ -15,7 +15,7 @@ from services.subscriber_service import (
     delete_subscriber,
     search_subscribers
 )
-from auth import token_required
+from auth import token_required, role_required
 
 
 # Champs jamais renvoyés dans les réponses JSON (ex: mot de passe hashé).
@@ -87,6 +87,7 @@ def _parse_incoming_data():
 
 @subscriber_bp.route("/subscribers", methods=["POST"])
 @token_required
+@role_required(["admin"])
 def create_subscriber_view():
     data = _parse_incoming_data()
     instance, errors = create_subscriber(data)
@@ -99,6 +100,7 @@ def create_subscriber_view():
 
 @subscriber_bp.route("/subscribers", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def get_all_subscribers_view():
     page, per_page, sort, order = _pagination_params()
     result = get_all_subscribers(page=page, per_page=per_page, sort=sort, order=order)
@@ -107,6 +109,7 @@ def get_all_subscribers_view():
 
 @subscriber_bp.route("/subscribers/search", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def search_subscribers_view():
     page, per_page, sort, order = _pagination_params()
     result = search_subscribers(request.args, page=page, per_page=per_page, sort=sort, order=order)
@@ -115,6 +118,7 @@ def search_subscribers_view():
 
 @subscriber_bp.route("/subscribers/<int:id>", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def get_subscriber_view(id):
     instance = get_subscriber_by_id(id)
     if instance is None:
@@ -124,6 +128,7 @@ def get_subscriber_view(id):
 
 @subscriber_bp.route("/subscribers/<int:id>", methods=["PUT"])
 @token_required
+@role_required(["admin"])
 def update_subscriber_view(id):
     data = _parse_incoming_data()
     instance, errors = update_subscriber(id, data)
@@ -137,6 +142,7 @@ def update_subscriber_view(id):
 
 @subscriber_bp.route("/subscribers/<int:id>", methods=["DELETE"])
 @token_required
+@role_required(["admin"])
 def delete_subscriber_view(id):
     ok = delete_subscriber(id)
     if not ok:

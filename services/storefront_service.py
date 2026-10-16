@@ -357,16 +357,26 @@ def checkout(session_key, data):
         errors.append("'phone' must be 32 characters or fewer")
     if data.get("region") and len(str(data["region"]).strip()) > 120:
         errors.append("'region' must be 120 characters or fewer")
+    if data.get("full_name") and len(str(data["full_name"]).strip()) > 120:
+        errors.append("'full_name' must be 120 characters or fewer")
+    if data.get("email") and len(str(data["email"]).strip()) > 190:
+        errors.append("'email' must be 190 characters or fewer")
+    if data.get("address") and len(str(data["address"]).strip()) > 255:
+        errors.append("'address' must be 255 characters or fewer")
     if errors:
         return None, errors
 
     cart = get_or_create_cart(session_key)
-    items = list(cart.items)
-    if not items:
-        return None, ["Your cart is empty"]
-
     try:
         with db.atomic():
+            cart_query = Cart.select().where(Cart.id == cart.id)
+            if db.obj.__class__.__name__ == "MySQLDatabase":
+                cart_query = cart_query.for_update()
+            cart = cart_query.get()
+            items = list(cart.items)
+            if not items:
+                return None, ["Your cart is empty"]
+
             order = Order.create(
                 full_name=data["full_name"].strip(), email=data["email"].strip(),
                 phone=data["phone"].strip(), address=data["address"].strip(),
@@ -376,8 +386,16 @@ def checkout(session_key, data):
             )
             total = Decimal(0)
             for item in items:
-                name, price, available = _item_info(item)
-                product = item.base if item.kind == "base" else item.swap
+                product_model = Base if item.kind == "base" else Swap
+                product_id = item.base_id if item.kind == "base" else item.swap_id
+                product_query = product_model.select().where(product_model.id == product_id)
+                if db.obj.__class__.__name__ == "MySQLDatabase":
+                    product_query = product_query.for_update()
+                product = product_query.get_or_none()
+                if product is None:
+                    raise _Unavailable("A product in your bag")
+                name = product.name
+                price = Decimal(product.price) if item.kind == "base" else Decimal(0) if product.is_free else Decimal(product.price)
                 if not product.is_active:
                     raise _Unavailable(name)
                 if not _is_in_stock(product, item.size) and not _can_order_out_of_stock(product):
@@ -426,6 +444,8 @@ def create_product_request(data):
     email = str(data.get("email", "")).strip().lower()
     if not name or not email or not EMAIL_RE.match(email):
         return None, ["Enter your name and a valid email address"]
+    if len(name) > 120 or len(email) > 190 or len(str(data.get("note") or "")) > 2000:
+        return None, ["Name, email, or note is too long"]
     model = Base if kind == "base" else Swap
     product = model.get_or_none((model.id == product_id) & (model.is_active == True))  # noqa: E712
     if product is None:
@@ -454,7 +474,7 @@ def create_product_request(data):
 # ---------------------------------------------------------------------------
 def subscribe(email):
     email = (email or "").strip().lower()
-    if not EMAIL_RE.match(email):
+    if len(email) > 190 or not EMAIL_RE.match(email):
         return None, ["Please enter a valid email address"]
     try:
         Subscriber.create(email=email)

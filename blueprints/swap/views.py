@@ -15,7 +15,7 @@ from services.swap_service import (
     delete_swap,
     search_swaps
 )
-from auth import token_required
+from auth import token_required, role_required
 from services.product_images import product_images, save_product_images, validate_image_uploads, set_primary_image
 
 
@@ -90,6 +90,7 @@ def _parse_incoming_data():
 
 @swap_bp.route("/swaps", methods=["POST"])
 @token_required
+@role_required(["admin"])
 def create_swap_view():
     data = _parse_incoming_data()
     files = data.pop("_images", [])
@@ -110,6 +111,7 @@ def create_swap_view():
 
 @swap_bp.route("/swaps", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def get_all_swaps_view():
     page, per_page, sort, order = _pagination_params()
     result = get_all_swaps(page=page, per_page=per_page, sort=sort, order=order)
@@ -118,6 +120,7 @@ def get_all_swaps_view():
 
 @swap_bp.route("/swaps/search", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def search_swaps_view():
     page, per_page, sort, order = _pagination_params()
     result = search_swaps(request.args, page=page, per_page=per_page, sort=sort, order=order)
@@ -126,6 +129,7 @@ def search_swaps_view():
 
 @swap_bp.route("/swaps/<int:id>", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def get_swap_view(id):
     instance = get_swap_by_id(id)
     if instance is None:
@@ -135,6 +139,7 @@ def get_swap_view(id):
 
 @swap_bp.route("/swaps/<int:id>", methods=["PUT"])
 @token_required
+@role_required(["admin"])
 def update_swap_view(id):
     data = _parse_incoming_data()
     files = data.pop("_images", [])
@@ -156,6 +161,7 @@ def update_swap_view(id):
 
 @swap_bp.route("/swaps/<int:id>", methods=["DELETE"])
 @token_required
+@role_required(["admin"])
 def delete_swap_view(id):
     ok = delete_swap(id)
     if not ok:

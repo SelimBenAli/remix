@@ -44,11 +44,18 @@ function showToast(message, type) {
   const el = document.createElement("div");
   el.className = `toast align-items-center ${colors[type] || colors.info} border-0`;
   el.setAttribute("role", "alert");
-  el.innerHTML = `
-    <div class="d-flex">
-      <div class="toast-body">${message}</div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-    </div>`;
+  const row = document.createElement("div");
+  row.className = "d-flex";
+  const body = document.createElement("div");
+  body.className = "toast-body";
+  body.textContent = String(message);
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className = "btn-close btn-close-white me-2 m-auto";
+  close.setAttribute("data-bs-dismiss", "toast");
+  close.setAttribute("aria-label", "Close");
+  row.append(body, close);
+  el.appendChild(row);
   container.appendChild(el);
   const toast = new bootstrap.Toast(el, { delay: 4000 });
   toast.show();

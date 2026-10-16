@@ -2,6 +2,8 @@
 Connexion API (JWT) + connexion dashboard admin (session), auto-généré par
 scaffold.py à partir de User.auth_config().
 """
+import secrets
+
 from flask import redirect, render_template, request, jsonify, session, url_for
 from werkzeug.security import check_password_hash
 
@@ -30,7 +32,7 @@ def _authenticate(username, password):
     if not username or not password:
         return None
     instance = User.get_or_none(getattr(User, USERNAME_FIELD) == username)
-    if instance is None:
+    if instance is None or not instance.is_active:
         return None
     if not check_password_hash(getattr(instance, PASSWORD_FIELD), password):
         return None
@@ -62,24 +64,40 @@ def api_login():
 @limiter.limit("10 per minute", methods=["POST"])
 def login_page():
     error = None
+    csrf_token = generate_csrf_token()
     if request.method == "POST":
-        instance = _authenticate(request.form.get(USERNAME_FIELD), request.form.get("password"))
+        submitted_csrf = request.form.get("csrf_token", "")
+        if not secrets.compare_digest(csrf_token, submitted_csrf):
+            error = "Your session expired. Reload the page and try again."
+            instance = None
+        else:
+            instance = _authenticate(request.form.get(USERNAME_FIELD), request.form.get("password"))
         if instance is None:
-            error = "Identifiants invalides."
+            error = error or "Identifiants invalides."
         elif VERIFIED_FIELD and EMAIL_VERIFICATION in ("signup", "both") and not getattr(instance, VERIFIED_FIELD):
             error = "Compte non vérifié — vérifie ton email avant de te connecter."
         elif ADMIN_DASHBOARD_ROLES and str(getattr(instance, ROLE_FIELD, None)) not in [str(r) for r in ADMIN_DASHBOARD_ROLES]:
             error = "Ce compte n'a pas accès au dashboard admin."
         else:
+            session.clear()
             session["user_id"] = instance.id
+            session.permanent = True
             generate_csrf_token()
-            return redirect(request.args.get("next") or url_for("admin_ui.index"))
-    return render_template("admin/login.html", error=error, username_field=USERNAME_FIELD, signup_enabled=SIGNUP_ENABLED)
+            target = request.args.get("next", "")
+            if target.startswith("/") and not target.startswith("//") and "\\" not in target and "\r" not in target and "\n" not in target and "%2f%2f" not in target.lower():
+                return redirect(target)
+            return redirect(url_for("admin_ui.index"))
+    return render_template("admin/login.html", error=error, username_field=USERNAME_FIELD,
+                           signup_enabled=SIGNUP_ENABLED, csrf_token=csrf_token)
 
 
-@auth_bp.route("/admin/logout")
+@auth_bp.route("/admin/logout", methods=["POST"])
 def logout():
+    token = session.get("csrf_token", "")
+    if not token or not secrets.compare_digest(token, request.form.get("csrf_token", "")):
+        return "Invalid CSRF token", 400
     session.pop("user_id", None)
+    session.pop("csrf_token", None)
     return redirect(url_for("auth.login_page"))
 
 

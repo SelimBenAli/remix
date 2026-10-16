@@ -15,7 +15,7 @@ from services.review_service import (
     delete_review,
     search_reviews
 )
-from auth import token_required
+from auth import token_required, role_required
 
 
 # Champs jamais renvoyés dans les réponses JSON (ex: mot de passe hashé).
@@ -87,6 +87,7 @@ def _parse_incoming_data():
 
 @review_bp.route("/reviews", methods=["POST"])
 @token_required
+@role_required(["admin"])
 def create_review_view():
     data = _parse_incoming_data()
     instance, errors = create_review(data)
@@ -99,6 +100,7 @@ def create_review_view():
 
 @review_bp.route("/reviews", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def get_all_reviews_view():
     page, per_page, sort, order = _pagination_params()
     result = get_all_reviews(page=page, per_page=per_page, sort=sort, order=order)
@@ -107,6 +109,7 @@ def get_all_reviews_view():
 
 @review_bp.route("/reviews/search", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def search_reviews_view():
     page, per_page, sort, order = _pagination_params()
     result = search_reviews(request.args, page=page, per_page=per_page, sort=sort, order=order)
@@ -115,6 +118,7 @@ def search_reviews_view():
 
 @review_bp.route("/reviews/<int:id>", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def get_review_view(id):
     instance = get_review_by_id(id)
     if instance is None:
@@ -124,6 +128,7 @@ def get_review_view(id):
 
 @review_bp.route("/reviews/<int:id>", methods=["PUT"])
 @token_required
+@role_required(["admin"])
 def update_review_view(id):
     data = _parse_incoming_data()
     instance, errors = update_review(id, data)
@@ -137,6 +142,7 @@ def update_review_view(id):
 
 @review_bp.route("/reviews/<int:id>", methods=["DELETE"])
 @token_required
+@role_required(["admin"])
 def delete_review_view(id):
     ok = delete_review(id)
     if not ok:

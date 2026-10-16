@@ -7,6 +7,7 @@ correspondantes.
 """
 import json
 import os
+from datetime import timedelta
 
 
 def _load_local_env():
@@ -40,8 +41,14 @@ class Config:
 
     # Utilisé pour signer les JWT (API) et les sessions (dashboard admin).
     # !! Change impérativement cette valeur par défaut en production !!
-    SECRET_KEY = os.environ.get("SECRET_KEY", "not-production")
     DEBUG = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+    SECRET_KEY = os.environ.get("SECRET_KEY", "local-development-only-change-me")
+    HSTS_SECONDS = int(os.environ.get("HSTS_SECONDS", "0"))
+    RATELIMIT_STORAGE_URI = os.environ.get("RATELIMIT_STORAGE_URI", "memory://")
+    RUNNING_FLASK_CLI = os.environ.get("FLASK_RUN_FROM_CLI", "").lower() == "true"
+    APP_ENV = os.environ.get("APP_ENV", "development" if DEBUG or RUNNING_FLASK_CLI else "production").lower()
+    TRUSTED_PROXY_FOR_HOPS = int(os.environ.get("TRUSTED_PROXY_FOR_HOPS", "0"))
+    TRUSTED_PROXY_PROTO_HOPS = int(os.environ.get("TRUSTED_PROXY_PROTO_HOPS", "0"))
 
     # SMTP pour l'envoi des codes de vérification par email (voir
     # send_verification_email() dans auth.py). Si SMTP_HOST est vide, les
@@ -60,13 +67,13 @@ class Config:
     # cross-site qui modifient des données).
     SESSION_COOKIE_SAMESITE = os.environ.get("SESSION_COOKIE_SAMESITE", "Lax")
     SESSION_COOKIE_HTTPONLY = True
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=int(os.environ.get("ADMIN_SESSION_HOURS", "8")))
     # Flask's development server is plain HTTP unless HTTPS is configured.
     # Phone testing over the local network therefore needs a non-Secure
     # session cookie, even when debug mode is off. Keep Secure cookies enabled
     # by default under production WSGI servers; deployments can explicitly set
     # SESSION_COOKIE_SECURE=true or false to override this behavior.
-    _running_flask_cli = os.environ.get("FLASK_RUN_FROM_CLI", "").lower() == "true"
-    _session_cookie_secure_default = not (DEBUG or _running_flask_cli)
+    _session_cookie_secure_default = APP_ENV == "production" and not DEBUG
     SESSION_COOKIE_SECURE = os.environ.get(
         "SESSION_COOKIE_SECURE", str(_session_cookie_secure_default).lower()
     ).lower() == "true"

@@ -43,8 +43,17 @@ from services.product_images import ensure_base_showroom_images
 
 
 def create_app():
-    if not Config.DEBUG and Config.SECRET_KEY == "change-moi-en-production":
-        raise RuntimeError("Set a strong SECRET_KEY before running with FLASK_DEBUG=false")
+    if Config.APP_ENV == "production" and (
+        not Config.SECRET_KEY or len(Config.SECRET_KEY) < 32 or
+        Config.SECRET_KEY in {"local-development-only-change-me", "generate-a-unique-random-secret-at-least-32-characters"}
+    ):
+        raise RuntimeError("Set SECRET_KEY to at least 32 random characters before running with FLASK_DEBUG=false")
+    if Config.APP_ENV == "production" and (Config.DEBUG or not Config.SESSION_COOKIE_SECURE):
+        raise RuntimeError("Production requires FLASK_DEBUG=false and SESSION_COOKIE_SECURE=true")
+    if Config.APP_ENV == "production" and Config.DB_ENGINE == "mysql" and (
+        not Config.DB_PASSWORD or not Config.DB_NAME or Config.DB_USER.lower() == "root"
+    ):
+        raise RuntimeError("Production MySQL requires a database name, password, and a dedicated non-root user")
 
     app = Flask(__name__)
     app.secret_key = Config.SECRET_KEY
@@ -52,10 +61,16 @@ def create_app():
     if not os.path.isabs(upload_folder):
         upload_folder = os.path.join(app.root_path, upload_folder)
     app.config["UPLOAD_FOLDER"] = upload_folder
+    app.config["APP_ENV"] = Config.APP_ENV
     app.config["SESSION_COOKIE_SAMESITE"] = Config.SESSION_COOKIE_SAMESITE
     app.config["SESSION_COOKIE_HTTPONLY"] = Config.SESSION_COOKIE_HTTPONLY
     app.config["SESSION_COOKIE_SECURE"] = Config.SESSION_COOKIE_SECURE
+    app.config["PERMANENT_SESSION_LIFETIME"] = Config.PERMANENT_SESSION_LIFETIME
     app.config["MAX_CONTENT_LENGTH"] = Config.MAX_CONTENT_LENGTH
+    if Config.TRUSTED_PROXY_FOR_HOPS > 0 or Config.TRUSTED_PROXY_PROTO_HOPS > 0:
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=Config.TRUSTED_PROXY_FOR_HOPS,
+                                x_proto=Config.TRUSTED_PROXY_PROTO_HOPS, x_host=0)
     limiter.init_app(app)
 
 
@@ -79,6 +94,20 @@ def create_app():
     app.register_blueprint(docs_bp)
     app.register_blueprint(storefront_bp)
     app.register_blueprint(admin_ui_bp)
+
+    if Config.APP_ENV == "production" and Config.RATELIMIT_STORAGE_URI == "memory://":
+        app.logger.warning("Rate limits use per-process memory storage. Configure shared Redis storage for multi-worker production.")
+
+    @app.after_request
+    def add_security_headers(response):
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        response.headers.setdefault("Content-Security-Policy", "frame-ancestors 'none'")
+        if Config.HSTS_SECONDS > 0:
+            response.headers.setdefault("Strict-Transport-Security", f"max-age={Config.HSTS_SECONDS}")
+        return response
 
     @app.route("/uploads/<path:filename>")
     def uploaded_file(filename):
@@ -108,5 +137,8 @@ def create_app():
 
 
 if __name__ == "__main__":
+    if "APP_ENV" not in os.environ:
+        Config.APP_ENV = "development"
+        Config.SESSION_COOKIE_SECURE = False
     app = create_app()
     app.run(debug=Config.DEBUG)

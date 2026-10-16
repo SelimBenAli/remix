@@ -16,7 +16,7 @@ from services.base_service import (
     search_bases,
     toggle_sold_out
 )
-from auth import token_required
+from auth import token_required, role_required
 from services.product_images import product_images, save_product_images, validate_image_uploads, set_showroom_image, set_primary_image
 
 
@@ -91,6 +91,7 @@ def _parse_incoming_data():
 
 @base_bp.route("/bases", methods=["POST"])
 @token_required
+@role_required(["admin"])
 def create_base_view():
     data = _parse_incoming_data()
     files = data.pop("_images", [])
@@ -114,6 +115,7 @@ def create_base_view():
 
 @base_bp.route("/bases", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def get_all_bases_view():
     page, per_page, sort, order = _pagination_params()
     result = get_all_bases(page=page, per_page=per_page, sort=sort, order=order)
@@ -122,6 +124,7 @@ def get_all_bases_view():
 
 @base_bp.route("/bases/search", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def search_bases_view():
     page, per_page, sort, order = _pagination_params()
     result = search_bases(request.args, page=page, per_page=per_page, sort=sort, order=order)
@@ -130,6 +133,7 @@ def search_bases_view():
 
 @base_bp.route("/bases/<int:id>", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def get_base_view(id):
     instance = get_base_by_id(id)
     if instance is None:
@@ -139,6 +143,7 @@ def get_base_view(id):
 
 @base_bp.route("/bases/<int:id>", methods=["PUT"])
 @token_required
+@role_required(["admin"])
 def update_base_view(id):
     data = _parse_incoming_data()
     files = data.pop("_images", [])
@@ -163,6 +168,7 @@ def update_base_view(id):
 
 @base_bp.route("/bases/<int:id>", methods=["DELETE"])
 @token_required
+@role_required(["admin"])
 def delete_base_view(id):
     ok = delete_base(id)
     if not ok:
@@ -174,6 +180,7 @@ def delete_base_view(id):
 
 @base_bp.route("/bases/<int:id>/toggle_sold_out", methods=["PATCH"])
 @token_required
+@role_required(["admin"])
 def toggle_sold_out_view(id):
     data = (request.get_json(silent=True) or {})
     errors = []

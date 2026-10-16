@@ -59,10 +59,16 @@ def main():
     with app.app_context(), db.connection_context():
         if not User.select().exists():
             email = os.environ.get("ADMIN_EMAIL", "admin@remix.local")
-            password = os.environ.get("ADMIN_PASSWORD") or secrets.token_urlsafe(12)
+            provided_password = os.environ.get("ADMIN_PASSWORD")
+            if app.config.get("APP_ENV") == "production" and (not provided_password or not os.environ.get("ADMIN_EMAIL")):
+                raise RuntimeError("Set ADMIN_EMAIL and ADMIN_PASSWORD before creating the first production admin")
+            password = provided_password or secrets.token_urlsafe(24)
             User.create(name="Admin", email=email, role="admin",
                         password=generate_password_hash(password))
-            print(f"Admin created -> {email} / {password}   (change it, this is shown once)")
+            if provided_password:
+                print(f"Admin created -> {email} (password read from ADMIN_PASSWORD; value not logged)")
+            else:
+                print(f"Admin created -> {email} / {password}   (development password shown once)")
 
         if not Base.select().exists():
             for name, type_, price, badge, sold_out in BASES:

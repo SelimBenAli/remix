@@ -10,6 +10,8 @@ then completed by hand.
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env        # fill DB_NAME / DB_USER / DB_PASSWORD / SECRET_KEY
+# For local development set APP_ENV=development, FLASK_DEBUG=true,
+# SESSION_COOKIE_SECURE=false, and RATELIMIT_STORAGE_URI=memory:// in .env.
 ```
 Create the empty MySQL database first (`CREATE DATABASE remix CHARACTER SET utf8mb4;`), then:
 ```
@@ -31,11 +33,33 @@ not this app's API host. Do not use it as `API_BASE_URL`.
 For production, run the included WSGI app behind an HTTPS reverse proxy and
 set `SECRET_KEY` to a long random value, `FLASK_DEBUG=false`,
 `SESSION_COOKIE_SECURE=true`, and the database connection variables for your
-hosted database. The app refuses to start in production with the built-in
-placeholder secret. Set `SESSION_COOKIE_SECURE=false` only for local HTTP
-development. If you host the frontend on a different domain, this same-origin
-setup will not work without changing the frontend URLs and configuring CORS
-and cross-site session cookies.
+hosted database. Install `requirements-prod.txt` when deploying outside Docker
+so the shared Redis rate-limit backend is available. Use a dedicated non-root MySQL account, not the default `root`
+account. Production startup refuses placeholder secrets and unsafe default
+MySQL credentials. Keep `.env` out of version control and use a secret manager
+for production values. The admin login and data APIs require an active admin
+account; customer tokens cannot access management endpoints.
+
+The app applies request limits to login, checkout, newsletter, pre-order, and
+cart changes. Set `RATELIMIT_STORAGE_URI` to a shared Redis service when running
+multiple workers; in-memory limits are local to each process. Set
+`TRUSTED_PROXY_FOR_HOPS` and `TRUSTED_PROXY_PROTO_HOPS` to the exact number of
+trusted proxies that set those individual headers. This makes rate limits use
+the visitor IP and lets Flask recognize HTTPS; do not trust client-supplied
+forwarded headers. Enable HSTS only after HTTPS works for
+the whole site. Do not expose Flask's development server to the internet.
+Set `SESSION_COOKIE_SECURE=false` only for local HTTP development. Run `seed.py`
+only as a deliberate one-time initialization; it adds example catalogue data
+and creates the first admin if none exists. Set `ADMIN_EMAIL` and
+`ADMIN_PASSWORD` for a production admin; production secrets are not printed.
+
+Before launch, verify database backups and restore, HTTPS for both site and
+database connections, the production environment variables, upload directory
+permissions and persistence, and a real checkout/order flow. The app currently
+creates tables and applies a small schema update during startup; move schema
+changes into a controlled migration step before scaling across multiple workers.
+If you host the frontend on a different domain, this same-origin setup will not
+work without changing frontend URLs and configuring CORS and cross-site cookies.
 
 ## Layout
 
@@ -43,7 +67,7 @@ and cross-site session cookies.
 |---|---|---|
 | `models/` | Peewee models + generator config (insert/update/search fields, auth, custom actions) | by hand |
 | `services/*_service.py` | CRUD/search per model | generated; custom actions (`toggle_sold_out`, `mark_paid`, `ship`, `cancel`) by hand below the `CODE CUSTOM` marker |
-| `blueprints/<model>/` | `/api/<models>` REST routes (JWT-protected) | generated |
+| `blueprints/<model>/` | `/api/<models>` REST routes (active-admin only) | generated |
 | `blueprints/admin_ui/`, `templates/admin/` | admin dashboard | generated |
 | `services/storefront_service.py` | public catalogue, guest cart, checkout, newsletter | by hand |
 | `blueprints/storefront/` | pages `/`, `/bases`, `/swaps` + public `/store/*` JSON | by hand |

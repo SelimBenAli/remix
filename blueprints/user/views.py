@@ -15,7 +15,7 @@ from services.user_service import (
     delete_user,
     search_users
 )
-from auth import token_required
+from auth import token_required, role_required
 
 
 # Champs jamais renvoyés dans les réponses JSON (ex: mot de passe hashé).
@@ -87,6 +87,7 @@ def _parse_incoming_data():
 
 @user_bp.route("/users", methods=["POST"])
 @token_required
+@role_required(["admin"])
 def create_user_view():
     data = _parse_incoming_data()
     instance, errors = create_user(data)
@@ -99,6 +100,7 @@ def create_user_view():
 
 @user_bp.route("/users", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def get_all_users_view():
     page, per_page, sort, order = _pagination_params()
     result = get_all_users(page=page, per_page=per_page, sort=sort, order=order)
@@ -107,6 +109,7 @@ def get_all_users_view():
 
 @user_bp.route("/users/search", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def search_users_view():
     page, per_page, sort, order = _pagination_params()
     result = search_users(request.args, page=page, per_page=per_page, sort=sort, order=order)
@@ -115,6 +118,7 @@ def search_users_view():
 
 @user_bp.route("/users/<int:id>", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def get_user_view(id):
     instance = get_user_by_id(id)
     if instance is None:
@@ -124,6 +128,7 @@ def get_user_view(id):
 
 @user_bp.route("/users/<int:id>", methods=["PUT"])
 @token_required
+@role_required(["admin"])
 def update_user_view(id):
     data = _parse_incoming_data()
     instance, errors = update_user(id, data)
@@ -137,6 +142,7 @@ def update_user_view(id):
 
 @user_bp.route("/users/<int:id>", methods=["DELETE"])
 @token_required
+@role_required(["admin"])
 def delete_user_view(id):
     ok = delete_user(id)
     if not ok:

@@ -126,9 +126,13 @@ body {
 }
 
 .logout-link {
+    padding: 0;
+    border: 0;
+    background: transparent;
     color: #9a9fa3;
     font-size: .85rem;
     text-decoration: none;
+    cursor: pointer;
 }
 
 .logout-link:hover {

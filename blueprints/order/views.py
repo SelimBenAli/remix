@@ -19,7 +19,7 @@ from services.order_service import (
     ship,
     cancel
 )
-from auth import token_required
+from auth import token_required, role_required
 
 
 # Champs jamais renvoyés dans les réponses JSON (ex: mot de passe hashé).
@@ -91,6 +91,7 @@ def _parse_incoming_data():
 
 @order_bp.route("/orders", methods=["POST"])
 @token_required
+@role_required(["admin"])
 def create_order_view():
     data = _parse_incoming_data()
     instance, errors = create_order(data)
@@ -103,6 +104,7 @@ def create_order_view():
 
 @order_bp.route("/orders", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def get_all_orders_view():
     page, per_page, sort, order = _pagination_params()
     result = get_all_orders(page=page, per_page=per_page, sort=sort, order=order)
@@ -111,6 +113,7 @@ def get_all_orders_view():
 
 @order_bp.route("/orders/search", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def search_orders_view():
     page, per_page, sort, order = _pagination_params()
     result = search_orders(request.args, page=page, per_page=per_page, sort=sort, order=order)
@@ -119,6 +122,7 @@ def search_orders_view():
 
 @order_bp.route("/orders/<int:id>", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def get_order_view(id):
     instance = get_order_by_id(id)
     if instance is None:
@@ -128,6 +132,7 @@ def get_order_view(id):
 
 @order_bp.route("/orders/<int:id>/items", methods=["GET"])
 @token_required
+@role_required(["admin"])
 def get_order_items_view(id):
     order = get_order_by_id(id)
     if order is None:
@@ -160,6 +165,7 @@ def get_order_items_view(id):
 
 @order_bp.route("/orders/<int:id>", methods=["PUT"])
 @token_required
+@role_required(["admin"])
 def update_order_view(id):
     data = _parse_incoming_data()
     instance, errors = update_order(id, data)
@@ -173,6 +179,7 @@ def update_order_view(id):
 
 @order_bp.route("/orders/<int:id>", methods=["DELETE"])
 @token_required
+@role_required(["admin"])
 def delete_order_view(id):
     ok = delete_order(id)
     if not ok:
@@ -184,6 +191,7 @@ def delete_order_view(id):
 
 @order_bp.route("/orders/<int:id>/mark_paid", methods=["PATCH"])
 @token_required
+@role_required(["admin"])
 def mark_paid_view(id):
     data = (request.get_json(silent=True) or {})
     errors = []
@@ -200,6 +208,7 @@ def mark_paid_view(id):
 
 @order_bp.route("/orders/<int:id>/ship", methods=["PATCH"])
 @token_required
+@role_required(["admin"])
 def ship_view(id):
     data = (request.get_json(silent=True) or {})
     errors = []
@@ -216,6 +225,7 @@ def ship_view(id):
 
 @order_bp.route("/orders/<int:id>/cancel", methods=["PATCH"])
 @token_required
+@role_required(["admin"])
 def cancel_view(id):
     data = (request.get_json(silent=True) or {})
     errors = []
