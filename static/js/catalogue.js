@@ -122,16 +122,16 @@ function initSwapsCatalogue() {
   const moreBtn = document.querySelector("[data-swaps-more]");
   const status = document.querySelector("[data-swaps-status]");
   const mixModal = document.querySelector("[data-mix-modal]");
-  const baseSelect = document.querySelector("[data-mix-base-select]");
   const sizeChoices = document.querySelector("[data-mix-sizes]");
-  const baseQuantityInput = document.querySelector("[data-mix-base-quantity]");
-  const swapQuantityInput = document.querySelector("[data-mix-swap-quantity]");
+  const swapQuantityValue = document.querySelector("[data-mix-quantity-value]");
+  const mixQuantityButtons = document.querySelectorAll("[data-mix-quantity-change]");
   const mixSubmit = document.querySelector("[data-mix-submit]");
   const mixStage = document.querySelector("[data-mix-preview]");
   const mixDropzone = document.querySelector("[data-mix-dropzone]");
   const mixZoom = document.querySelector("[data-mix-art-zoom]");
   const mixReset = document.querySelector("[data-mix-art-reset]");
   const cartBaseImage = document.querySelector("[data-cart-base-image]");
+  const cartBaseShowroom = document.querySelector("[data-cart-base-showroom]");
   const cartBaseEmpty = document.querySelector("[data-cart-base-empty]");
   const cartBaseName = document.querySelector("[data-cart-base-name]");
   const cartBaseMeta = document.querySelector("[data-cart-base-meta]");
@@ -147,7 +147,7 @@ function initSwapsCatalogue() {
   const artworkTransform = { x: 0, y: 0, z: 1 };
   let artworkDrag = null;
   let artworkInteracted = false;
-  let bases = [], selectedCartBaseId = "", activeSwap = null, selectedBaseSize = "";
+  let bases = [], selectedCartBaseId = "", activeSwap = null, selectedBaseSize = "", swapQuantity = 1;
   const requestedArtist = new URLSearchParams(location.search).get("artist");
   let items = [];
   let activeCategory = "All";
@@ -176,6 +176,8 @@ function initSwapsCatalogue() {
   }
   function updateCartBaseShowroom() {
     const base = bases.find((item) => String(item.id) === String(selectedCartBaseId));
+    cartBaseShowroom?.classList.toggle("has-selected-base", Boolean(base));
+    document.body.classList.toggle("has-cart-base", Boolean(base));
     const imageUrl = cartBaseImageUrl(base);
     if (cartBaseImage) {
       cartBaseImage.hidden = !imageUrl;
@@ -207,16 +209,9 @@ function initSwapsCatalogue() {
       </button>`;
     }).join("");
   }
-  function syncMixBaseSelect() {
-    if (!baseSelect) return;
-    baseSelect.innerHTML = `<option value="">No base (swap only)</option>${bases.map((base) => `<option value="${base.id}">${escapeHtml(base.name)} · ${formatPrice(base.price)}</option>`).join("")}`;
-    baseSelect.disabled = false;
-    baseSelect.value = bases.some((base) => String(base.id) === String(selectedCartBaseId)) ? String(selectedCartBaseId) : "";
-  }
   async function loadCartBases() {
     bases = await storeApi("/store/cart/bases");
     if (!bases.some((base) => String(base.id) === String(selectedCartBaseId))) selectedCartBaseId = bases.length ? String(bases[0].id) : "";
-    syncMixBaseSelect();
     updateCartBaseShowroom();
     return bases;
   }
@@ -224,7 +219,6 @@ function initSwapsCatalogue() {
     const base = bases.find((item) => String(item.id) === String(baseId));
     if (!base) return;
     selectedCartBaseId = String(base.id);
-    syncMixBaseSelect();
     updateCartBaseShowroom();
     if (activeSwap) renderMixSizes();
     cartBasePicker?.close();
@@ -234,7 +228,7 @@ function initSwapsCatalogue() {
     chipRow.innerHTML = categories.map((category) =>
       `<button type="button" class="chip ${category === activeCategory ? "is-active" : ""}" data-swap-category="${escapeHtml(category)}" aria-pressed="${category === activeCategory}">${escapeHtml(category)}</button>`).join("");
   }
-  function selectedMixBase() { return bases.find((base) => String(base.id) === baseSelect?.value); }
+  function selectedMixBase() { return bases.find((base) => String(base.id) === String(selectedCartBaseId)); }
   const mixPercent = (value) => `${value / MIX_DESIGN_WIDTH * 100}%`;
   function findArtworkBounds(image) {
     const fallback = { x1: 0, y1: 0, x2: image.naturalWidth, y2: image.naturalHeight };
@@ -376,47 +370,41 @@ function initSwapsCatalogue() {
     if (artist) artist.textContent = activeSwap.artist || "Independent artist";
     if (bio) bio.textContent = activeSwap.artistBio || `${activeSwap.artist || "This artist"} creates original artwork for the REMIX community.`;
     if (avatar) avatar.textContent = (activeSwap.artist || "A").trim().charAt(0).toUpperCase();
-    const baseQuantity = Math.max(0, Number(baseQuantityInput?.value) || 0);
-    const swapQuantity = Math.max(1, Number(swapQuantityInput?.value) || 1);
-    const baseTotal = (Number(base?.price) || 0) * baseQuantity;
     const swapTotal = (activeSwap.free ? 0 : Number(activeSwap.price) || 0) * swapQuantity;
-    if (price) price.textContent = formatPrice(baseTotal + swapTotal);
-    if (priceLabel) priceLabel.textContent = baseQuantity ? "Order total" : "Swap total";
+    if (price) price.textContent = formatPrice(swapTotal);
+    if (priceLabel) priceLabel.textContent = "Swap total";
     if (error) error.textContent = "";
-    const sizeStock = base?.sizeStock || {};
-    const baseHasSizes = !!base?.sizes?.length;
-    const anySizeInStock = Object.values(sizeStock).some((quantity) => Number(quantity) > 0);
-    const baseSizeInStock = !base?.soldOut && (!Object.keys(sizeStock).length || (baseHasSizes && !selectedBaseSize ? anySizeInStock : Number(sizeStock[selectedBaseSize] || 0) >= baseQuantity));
     const swapInStock = activeSwap.inStock !== false;
     if (stock) {
-      const out = (baseQuantity > 0 && !baseSizeInStock) || !swapInStock;
-      stock.textContent = baseQuantity > 0
-        ? (out ? "One or more selected items are out of stock." : "Base and swap are available.")
-        : (swapInStock ? "Swap is available." : "Swap is out of stock.");
+      const out = !swapInStock;
+      stock.textContent = swapInStock ? "Swap is available." : "Swap is out of stock.";
       stock.classList.toggle("is-out", out);
     }
-    const needsSize = !!base?.sizes?.length;
-    const hasSelection = !needsSize || !!selectedBaseSize;
-    const baseCanOrder = !baseQuantity || (baseSizeInStock || base?.orderedEvenOutOfStock);
     const swapCanOrder = activeSwap.orderedEvenOutOfStock || activeSwap.stockQuantity == null || Number(activeSwap.stockQuantity) >= swapQuantity;
-    const canOrder = baseCanOrder && swapCanOrder;
+    const canOrder = swapCanOrder;
     const blockedByStock = !canOrder;
     if (stock && blockedByStock) stock.textContent = "Out of stock. Choose another option to continue.";
-    else if (stock && ((baseQuantity && !baseSizeInStock) || !swapInStock)) stock.textContent = "Out of stock — pre-order is available.";
-    const validQuantities = Number.isInteger(baseQuantity) && Number.isInteger(swapQuantity) && baseQuantity <= 20 && swapQuantity >= 1 && swapQuantity <= 20;
-    if (mixSubmit) mixSubmit.disabled = !validQuantities || (baseQuantity > 0 && (!base || !hasSelection)) || !canOrder;
+    else if (stock && !swapInStock) stock.textContent = "Out of stock — pre-order is available.";
+    const validQuantity = Number.isInteger(swapQuantity) && swapQuantity >= 1 && swapQuantity <= 20;
+    if (mixSubmit) mixSubmit.disabled = !validQuantity || !canOrder;
   }
   function renderMixSizes() {
     const base = selectedMixBase();
-    selectedBaseSize = "";
+    const cartSizes = base?.cartSizes || [];
+    selectedBaseSize = cartSizes[0]?.size || "";
     if (!sizeChoices) return;
     sizeChoices.replaceChildren();
-    (base?.sizes || []).forEach((size) => {
+    cartSizes.forEach((entry) => {
       const button = document.createElement("button");
-      button.type = "button"; button.className = "mix-size"; button.textContent = size;
-      button.setAttribute("aria-pressed", "false");
+      button.type = "button"; button.className = "mix-size";
+      const label = document.createElement("strong"); label.textContent = entry.size;
+      const quantity = document.createElement("small"); quantity.textContent = `${entry.quantity} in bag`;
+      button.append(label, quantity);
+      const selectedInitially = entry.size === selectedBaseSize;
+      button.classList.toggle("is-selected", selectedInitially);
+      button.setAttribute("aria-pressed", String(selectedInitially));
       button.addEventListener("click", () => {
-        selectedBaseSize = size;
+        selectedBaseSize = entry.size;
         sizeChoices.querySelectorAll("button").forEach((option) => {
           const selected = option === button;
           option.classList.toggle("is-selected", selected);
@@ -426,10 +414,20 @@ function initSwapsCatalogue() {
       });
       sizeChoices.appendChild(button);
     });
-    if (!base?.sizes?.length) {
-      const note = document.createElement("span"); note.textContent = "One size"; sizeChoices.appendChild(note);
+    if (!cartSizes.length) {
+      const note = document.createElement("span");
+      note.textContent = !base
+        ? "Add a base to your bag to choose its size."
+        : (base.sizes?.length ? "No size is saved for this base in your bag." : "One size");
+      sizeChoices.appendChild(note);
     }
     updateMixPreview();
+  }
+  function syncMixQuantityControls() {
+    mixQuantityButtons.forEach((button) => {
+      button.disabled = (swapQuantity === 1 && button.dataset.mixQuantityChange === "-1") ||
+        (swapQuantity === 20 && button.dataset.mixQuantityChange === "1");
+    });
   }
   async function openMixBuilder(swap) {
     if (!mixModal) return;
@@ -437,8 +435,9 @@ function initSwapsCatalogue() {
     Object.assign(artworkTransform, { x: 0, y: 0, z: 1 });
     artworkBounds = null;
     artworkInteracted = false;
-    if (baseQuantityInput) baseQuantityInput.value = "0";
-    if (swapQuantityInput) swapQuantityInput.value = "1";
+    swapQuantity = 1;
+    if (swapQuantityValue) swapQuantityValue.textContent = "1";
+    syncMixQuantityControls();
     mixModal.hidden = false;
     document.body.classList.add("no-scroll");
     const submit = mixModal.querySelector("[data-mix-submit]");
@@ -457,7 +456,7 @@ function initSwapsCatalogue() {
         sizeChoices?.replaceChildren();
         updateMixPreview();
       }
-      baseSelect?.focus();
+      mixModal.querySelector("[data-cart-base-open]")?.focus();
     } catch (error) {
       if (submit) { submit.textContent = "Bases unavailable"; submit.disabled = true; }
       const message = mixModal.querySelector("[data-mix-error]");
@@ -479,15 +478,12 @@ function initSwapsCatalogue() {
   mixModal?.querySelectorAll("[data-mix-close]").forEach((button) => button.addEventListener("click", () => {
     mixModal.hidden = true; document.body.classList.remove("no-scroll");
   }));
-  baseSelect?.addEventListener("change", () => {
-    if (baseSelect.value) {
-      selectedCartBaseId = String(baseSelect.value);
-      updateCartBaseShowroom();
-    }
-    renderMixSizes();
-  });
-  baseQuantityInput?.addEventListener("input", updateMixPreview);
-  swapQuantityInput?.addEventListener("input", updateMixPreview);
+  mixQuantityButtons.forEach((button) => button.addEventListener("click", () => {
+    swapQuantity = Math.min(20, Math.max(1, swapQuantity + Number(button.dataset.mixQuantityChange)));
+    if (swapQuantityValue) swapQuantityValue.textContent = String(swapQuantity);
+    syncMixQuantityControls();
+    updateMixPreview();
+  }));
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && mixModal && !mixModal.hidden) {
       mixModal.hidden = true; document.body.classList.remove("no-scroll");
@@ -495,9 +491,7 @@ function initSwapsCatalogue() {
   });
   mixSubmit?.addEventListener("click", async () => {
     const base = selectedMixBase();
-    const baseQuantity = Number(baseQuantityInput?.value ?? 0);
-    const swapQuantity = Number(swapQuantityInput?.value ?? 1);
-    if ((baseQuantity && (!base || (base.sizes?.length && !selectedBaseSize))) || !activeSwap) return;
+    if (!activeSwap) return;
     mixSubmit.disabled = true;
     mixSubmit.textContent = "Adding your mix…";
     const error = mixModal.querySelector("[data-mix-error]");
@@ -505,14 +499,13 @@ function initSwapsCatalogue() {
     try {
       const cart = await storeApi("/store/cart/bundle", {
         method: "POST",
-        body: JSON.stringify({ base_id: base?.id || null, base_size: selectedBaseSize || null, base_quantity: baseQuantity, swap_id: activeSwap.id, swap_quantity: swapQuantity }),
+        body: JSON.stringify({ base_id: base?.id || null, base_size: selectedBaseSize || null, base_quantity: 0, swap_id: activeSwap.id, swap_quantity: swapQuantity }),
       });
       if (typeof currentCart !== "undefined") currentCart = cart;
       if (typeof updateCartCount === "function") updateCartCount();
       if (typeof renderCartDrawer === "function") renderCartDrawer();
-      if (baseQuantity > 0) await loadCartBases();
       mixModal.hidden = true; document.body.classList.remove("no-scroll");
-      showToast(baseQuantity ? "Your swap and base were added to your bag" : "Swap added to your bag");
+      showToast("Swap added to your bag");
     } catch (requestError) {
       if (error) error.textContent = requestError.message;
       mixSubmit.disabled = false;

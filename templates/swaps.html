@@ -2,127 +2,157 @@
 {% block title %}Swaps — REMIX{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/mix-modal.css', v='20261015-7') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/mix-modal.css', v='20261016-3') }}">
 {% endblock %}
 
 {% block content %}
 
-<section class="collection-hero">
-  <div class="container">
-    <div class="collection-hero-inner">
-      <p class="breadcrumb"><a href="/">Home</a> / Swaps</p>
-      <h1>Build Your Bundle</h1>
-      <p class="lede">Collectible art panels from independent artists around the world. Mix, match, and swap them across any REMIX base.</p>
-    </div>
-  </div>
-</section>
-
-<section class="section-tight">
-  <div class="container">
-    <div class="swaps-build-layout">
-      <aside class="cart-base-showroom" data-cart-base-showroom aria-label="Your selected base">
-        <p class="showroom-eyebrow">YOUR BASE</p>
-        <div class="showroom-image-wrap">
-          <img data-cart-base-image alt="Base in your cart" hidden>
-          <div class="showroom-empty" data-cart-base-empty>Add a base to your bag to preview swaps on it.</div>
+    <section class="collection-hero">
+        <div class="container">
+            <div class="collection-hero-inner">
+                <p class="breadcrumb"><a href="/">Home</a> / Swaps</p>
+                <h1>Build Your Bundle</h1>
+                <p class="lede">Collectible art panels from independent artists around the world. Mix, match, and swap
+                    them across any REMIX base.</p>
+            </div>
         </div>
-        <div class="showroom-base-details">
-          <strong data-cart-base-name>Your bag is waiting</strong>
-          <span data-cart-base-meta>Choose a base to start styling</span>
+    </section>
+
+    <section class="section-tight">
+        <div class="container">
+            <div class="swaps-build-layout">
+                <aside class="cart-base-showroom" data-cart-base-showroom aria-label="Your selected base">
+                    <p class="showroom-eyebrow">YOUR BASE</p>
+                    <div class="showroom-image-wrap">
+                        <img data-cart-base-image alt="Base in your cart" hidden>
+                        <div class="showroom-empty" data-cart-base-empty>Add a base to your bag to preview swaps on
+                            it.
+                        </div>
+                    </div>
+                    <div class="showroom-base-details">
+                        <strong data-cart-base-name>Your bag is waiting</strong>
+                        <span data-cart-base-meta>Choose a base to start styling</span>
+                    </div>
+                    <div class="showroom-actions">
+                        <button class="showroom-change-btn" type="button" data-cart-base-open disabled
+                                aria-label="Change base">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/>
+                                <circle cx="12" cy="12" r="2.5"/>
+                            </svg>
+                            <span>Change base</span>
+                        </button>
+                        <a class="btn btn-primary showroom-checkout-btn" href="/order">Checkout</a>
+                    </div>
+                </aside>
+
+                <div class="swaps-results">
+                    <div class="swaps-categories-wrap">
+                        <span class="swaps-categories-label">Category</span>
+                        <div class="chip-row swaps-categories" data-swaps-filters aria-label="Filter swaps by category"
+                             role="group"></div>
+                    </div>
+                    <div class="catalogue-toolbar swaps-toolbar">
+                        <div style="display:flex; align-items:center; gap:1rem;">
+                            <span class="result-count" data-swaps-count></span>
+                            <select class="select-sort" data-swaps-sort aria-label="Sort swaps">
+                                <option value="newest">Newest</option>
+                                <option value="popular">Most Popular</option>
+                                <option value="price-asc">Price: Low to High</option>
+                                <option value="price-desc">Price: High to Low</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="product-grid" data-swaps-grid></div>
+
+                    <div class="load-more-wrap">
+                        <button class="btn btn-outline" data-swaps-more>Load More Panels</button>
+                        <p class="load-status" data-swaps-status></p>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="showroom-actions">
-          <button class="showroom-change-btn" type="button" data-cart-base-open disabled aria-label="Change base">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></svg>
-            <span>Change base</span>
-          </button>
-          <a class="btn btn-primary showroom-checkout-btn" href="/order">Checkout</a>
+    </section>
+
+    <div class="mix-modal" data-mix-modal hidden role="dialog" aria-modal="true" aria-labelledby="mix-title">
+        <button class="mix-backdrop" type="button" data-mix-close aria-label="Close mix builder"></button>
+        <div class="mix-panel">
+            <button class="mix-close" type="button" data-mix-close aria-label="Close">×</button>
+            <div class="mix-preview-column">
+                <p class="mix-kicker">YOUR LOOK, IN THE MAKING</p>
+                <div class="mix-preview" data-mix-preview>
+                    <img class="mix-art-image" data-mix-art-image alt="Selected swap artwork">
+                    <img class="mix-base-image" data-mix-base-image alt="Selected base">
+                    <div class="mix-dropzone" data-mix-dropzone aria-label="Drag to position the swap artwork"></div>
+                    <span class="mix-preview-caption">BASE + PANEL</span>
+                </div>
+                <!-- <div class="mix-art-controls"><label for="mix-art-zoom">Swap position / zoom</label><input
+                        id="mix-art-zoom" data-mix-art-zoom type="range" min="1" max="2.5" step="0.01" value="1">
+                    <button type="button" data-mix-art-reset>Reset</button>
+                </div>-->
+                <p class="mix-preview-note">Preview is a styling mockup. Panel placement may vary by garment.</p>
+            </div>
+            <div class="mix-details">
+                <p class="mix-kicker">LET’S MIX</p>
+                <h2 id="mix-title" data-mix-swap-name>Choose your art</h2>
+                <p class="mix-artist-line">Art by <strong data-mix-artist></strong></p>
+                <div class="mix-author-card">
+                    <div class="mix-avatar" data-mix-avatar aria-hidden="true"></div>
+                    <div><span class="mix-author-label">THE ARTIST</span>
+                        <p data-mix-bio></p></div>
+                </div>
+                <div class="mix-base-heading"><span class="mix-label">Base in your bag</span>
+                    <button class="mix-change-base" type="button" data-cart-base-open disabled>Change base</button>
+                </div>
+                <div class="mix-size-block"><span class="mix-label">Size in your bag</span>
+                    <div class="mix-sizes" data-mix-sizes role="group"
+                         aria-label="Choose a size already in your bag"></div>
+                </div>
+                <div class="mix-quantity-row"><span class="mix-label">Swap quantity</span>
+                    <div class="cart-quantity mix-cart-quantity" data-mix-quantity aria-label="Swap quantity">
+                        <button type="button" data-mix-quantity-change="-1" aria-label="Decrease swap quantity">−
+                        </button>
+                        <span data-mix-quantity-value aria-live="polite">1</span>
+                        <button type="button" data-mix-quantity-change="1" aria-label="Increase swap quantity">+
+                        </button>
+                    </div>
+                </div>
+                <div class="mix-price-row"><span data-mix-price-label>Swap total</span><strong data-mix-price></strong>
+                </div>
+                <p class="mix-stock" data-mix-stock aria-live="polite"></p>
+                <button class="mix-submit" type="button" data-mix-submit disabled>Add swap</button>
+                <p class="mix-error" data-mix-error role="status" aria-live="polite"></p>
+                <p class="mix-fine-print">Panels are interchangeable across REMIX bases.</p>
+            </div>
         </div>
-      </aside>
-
-      <div class="swaps-results">
-    <div class="swaps-categories-wrap">
-      <span class="swaps-categories-label">Category</span>
-      <div class="chip-row swaps-categories" data-swaps-filters aria-label="Filter swaps by category" role="group"></div>
-    </div>
-    <div class="catalogue-toolbar swaps-toolbar">
-      <div style="display:flex; align-items:center; gap:1rem;">
-        <span class="result-count" data-swaps-count></span>
-        <select class="select-sort" data-swaps-sort aria-label="Sort swaps">
-          <option value="newest">Newest</option>
-          <option value="popular">Most Popular</option>
-          <option value="price-asc">Price: Low to High</option>
-          <option value="price-desc">Price: High to Low</option>
-        </select>
-      </div>
     </div>
 
-    <div class="product-grid" data-swaps-grid></div>
+    <dialog class="cart-base-picker" data-cart-base-picker aria-labelledby="cart-base-picker-title">
+        <div class="cart-base-picker-head">
+            <div><p class="showroom-eyebrow">YOUR BAG</p>
+                <h2 id="cart-base-picker-title">Choose a base</h2></div>
+            <button type="button" class="cart-base-picker-close" data-cart-base-close aria-label="Close base picker">×
+            </button>
+        </div>
+        <div class="cart-base-picker-options" data-cart-base-options></div>
+    </dialog>
 
-    <div class="load-more-wrap">
-      <button class="btn btn-outline" data-swaps-more>Load More Panels</button>
-      <p class="load-status" data-swaps-status></p>
-    </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<div class="mix-modal" data-mix-modal hidden role="dialog" aria-modal="true" aria-labelledby="mix-title">
-  <button class="mix-backdrop" type="button" data-mix-close aria-label="Close mix builder"></button>
-  <div class="mix-panel">
-    <button class="mix-close" type="button" data-mix-close aria-label="Close">×</button>
-    <div class="mix-preview-column">
-      <p class="mix-kicker">YOUR LOOK, IN THE MAKING</p>
-      <div class="mix-preview" data-mix-preview>
-        <img class="mix-art-image" data-mix-art-image alt="Selected swap artwork">
-        <img class="mix-base-image" data-mix-base-image alt="Selected base">
-        <div class="mix-dropzone" data-mix-dropzone aria-label="Drag to position the swap artwork"></div>
-        <span class="mix-preview-caption">BASE + PANEL</span>
-      </div>
-      <div class="mix-art-controls"><label for="mix-art-zoom">Swap position / zoom</label><input id="mix-art-zoom" data-mix-art-zoom type="range" min="1" max="2.5" step="0.01" value="1"><button type="button" data-mix-art-reset>Reset</button></div>
-      <p class="mix-preview-note">Preview is a styling mockup. Panel placement may vary by garment.</p>
-    </div>
-    <div class="mix-details">
-      <p class="mix-kicker">LET’S MIX</p>
-      <h2 id="mix-title" data-mix-swap-name>Choose your art</h2>
-      <p class="mix-artist-line">Art by <strong data-mix-artist></strong></p>
-      <div class="mix-author-card">
-        <div class="mix-avatar" data-mix-avatar aria-hidden="true"></div>
-        <div><span class="mix-author-label">THE ARTIST</span><p data-mix-bio></p></div>
-      </div>
-      <div class="mix-base-select-heading"><label class="mix-label" for="mix-base-select">Choose your base</label><button class="mix-change-base" type="button" data-cart-base-open disabled>Change base</button></div>
-      <select id="mix-base-select" data-mix-base-select></select>
-      <div class="mix-size-block"><span class="mix-label">Choose your size</span><div class="mix-sizes" data-mix-sizes role="group" aria-label="Choose a base size"></div></div>
-      <div class="mix-quantity-row"><label for="mix-base-quantity">Base quantity to add (optional)</label><input id="mix-base-quantity" data-mix-base-quantity type="number" min="0" max="20" step="1" value="0" inputmode="numeric"></div>
-      <div class="mix-quantity-row"><label for="mix-swap-quantity">Swap quantity</label><input id="mix-swap-quantity" data-mix-swap-quantity type="number" min="1" max="20" step="1" value="1" inputmode="numeric"></div>
-      <div class="mix-price-row"><span data-mix-price-label>Swap total</span><strong data-mix-price></strong></div>
-      <p class="mix-stock" data-mix-stock aria-live="polite"></p>
-      <button class="mix-submit" type="button" data-mix-submit disabled>Add swap</button>
-      <p class="mix-error" data-mix-error role="status" aria-live="polite"></p>
-      <p class="mix-fine-print">Panels are interchangeable across REMIX bases.</p>
-    </div>
-  </div>
-</div>
-
-<dialog class="cart-base-picker" data-cart-base-picker aria-labelledby="cart-base-picker-title">
-  <div class="cart-base-picker-head"><div><p class="showroom-eyebrow">YOUR BAG</p><h2 id="cart-base-picker-title">Choose a base</h2></div><button type="button" class="cart-base-picker-close" data-cart-base-close aria-label="Close base picker">×</button></div>
-  <div class="cart-base-picker-options" data-cart-base-options></div>
-</dialog>
-
-<section class="section section-alt section-tight">
-  <div class="container split reverse">
-    <div class="split-media">Photo placeholder<br>(panel detail shots)</div>
-    <div>
-      <p class="eyebrow">Art by humans</p>
-      <h2>Every Panel Supports An Artist</h2>
-      <p class="lede">Each design is original, human-made artwork. A portion of every sale goes directly to the artist behind it.</p>
-      <a href="#" class="btn btn-primary">Meet The Artists</a>
-    </div>
-  </div>
-</section>
+    <section class="section section-alt section-tight">
+        <div class="container split reverse">
+            <div class="split-media">Photo placeholder<br>(panel detail shots)</div>
+            <div>
+                <p class="eyebrow">Art by humans</p>
+                <h2>Every Panel Supports An Artist</h2>
+                <p class="lede">Each design is original, human-made artwork. A portion of every sale goes directly to
+                    the artist behind it.</p>
+                <a href="#" class="btn btn-primary">Meet The Artists</a>
+            </div>
+        </div>
+    </section>
 
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="{{ url_for('static', filename='js/catalogue.js', v='20261015-4') }}"></script>
+<script src="{{ url_for('static', filename='js/catalogue.js', v='20261016-3') }}"></script>
 {% endblock %}

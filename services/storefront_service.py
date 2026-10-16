@@ -217,7 +217,8 @@ def _can_order_out_of_stock(product):
 def cart_summary(session_key):
     cart = get_or_create_cart(session_key)
     lines, total = [], Decimal(0)
-    for item in cart.items:
+    cart_items = CartItem.select().where(CartItem.cart == cart).order_by(CartItem.id)
+    for item in cart_items:
         name, price, available = _item_info(item)
         product = item.base if item.kind == "base" else item.swap
         line_total = price * item.quantity
@@ -231,16 +232,23 @@ def cart_summary(session_key):
 
 
 def cart_bases(session_key):
-    """Return unique base products currently present in this visitor's cart."""
+    """Return unique cart bases with the sizes and quantities in the visitor's bag."""
     cart = get_or_create_cart(session_key)
-    seen = set()
-    bases = []
-    for item in cart.items:
-        if item.kind != "base" or item.base_id is None or item.base_id in seen:
+    bases_by_id = {}
+    cart_items = CartItem.select().where(CartItem.cart == cart).order_by(CartItem.id)
+    for item in cart_items:
+        if item.kind != "base" or item.base_id is None:
             continue
-        seen.add(item.base_id)
-        bases.append(base_to_dict(item.base))
-    return bases
+        if item.base_id not in bases_by_id:
+            bases_by_id[item.base_id] = {**base_to_dict(item.base), "cartSizes": []}
+        if item.size:
+            sizes = bases_by_id[item.base_id]["cartSizes"]
+            size_entry = next((entry for entry in sizes if entry["size"] == item.size), None)
+            if size_entry:
+                size_entry["quantity"] += item.quantity
+            else:
+                sizes.append({"size": item.size, "quantity": item.quantity})
+    return list(bases_by_id.values())
 
 
 def add_to_cart(session_key, kind, product_id, quantity=1, size=None):
