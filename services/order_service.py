@@ -116,7 +116,7 @@ def search_orders(params, page=1, per_page=20, sort=None, order="asc"):
         elif operator == "lt":
             query = query.where(column < value)
         elif operator == "in":
-            values = value if isinstance(value, (list, tuple)) else [value]
+            values = value if isinstance(value, (list, tuple)) else str(value).split(",")
             query = query.where(column.in_(values))
     query = _apply_sort(query, sort, order)
     return _paginate(query, page, per_page)

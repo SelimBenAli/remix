@@ -31,6 +31,9 @@
   const orderItemsBody = document.getElementById("order-items-body");
 
   let mode = "create"; // ou "edit"
+  let formDirty = false;
+  let allowModalClose = false;
+  let savingEntity = false;
   const fkCache = {}; // { "user_id": [{id:1, name:"Alice", ...}, ...] }
   const selectedIds = new Set();
   let lastItems = []; // items actuellement affichés (pour l'export CSV de la page)
@@ -53,6 +56,26 @@
     return cfg.apiBase + (suffix || "");
   }
 
+  function showUndoToast(message, undo) {
+    const container = document.getElementById("toast-container");
+    if (!container) return;
+    const toastEl = document.createElement("div");
+    toastEl.className = "toast align-items-center text-bg-success border-0 admin-undo-toast";
+    toastEl.setAttribute("role", "status");
+    const row = document.createElement("div"); row.className = "d-flex align-items-center";
+    const body = document.createElement("div"); body.className = "toast-body"; body.textContent = message;
+    const button = document.createElement("button"); button.type = "button"; button.className = "btn btn-sm btn-light ms-auto me-2"; button.textContent = "Undo";
+    const close = document.createElement("button"); close.type = "button"; close.className = "btn-close btn-close-white me-2"; close.setAttribute("data-bs-dismiss", "toast"); close.setAttribute("aria-label", "Close");
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      try { await undo(); toast.hide(); }
+      catch (error) { button.disabled = false; showToast(`Could not undo: ${error.message}`, "danger"); }
+    });
+    row.append(body, button, close); toastEl.appendChild(row); container.appendChild(toastEl);
+    const toast = new bootstrap.Toast(toastEl, { delay: 10000 });
+    toast.show(); toastEl.addEventListener("hidden.bs.toast", () => toastEl.remove());
+  }
+
   function fieldKind(rule) {
     if (rule && rule.choices) return "choices";
     if (rule && rule.type === "bool") return "bool";
@@ -68,6 +91,11 @@
     if (rule && rule.type === "date") return "date";
     if (rule && rule.type === "datetime") return "datetime-local";
     return "text";
+  }
+
+  function friendlyEntityName() {
+    const name = String(cfg.entityLabel || "item").trim().replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase();
+    return name.endsWith("s") ? name.slice(0, -1) : name;
   }
 
   async function loadForeignKeyOptions() {
@@ -95,18 +123,23 @@
   }
 
   function buildFormFields(fieldsConfig) {
+    if (entityForm.dataset.previewObjectUrl) URL.revokeObjectURL(entityForm.dataset.previewObjectUrl);
+    delete entityForm.dataset.previewObjectUrl;
+    delete entityForm.dataset.previewFile;
     entityForm.innerHTML = "";
     let fieldTarget = entityForm;
-    if (cfg.baseEditor) {
+    if (cfg.productEditor) {
       const nav = document.createElement("div");
       nav.className = "base-editor-tabs";
       nav.setAttribute("role", "tablist");
       const sections = {};
-      [["details", "Details"], ["sizes", "Sizes"], ["images", "Images"]].forEach(([key, title], index) => {
+      let detailFields;
+      (cfg.baseEditor ? [["details", "Details"], ["sizes", "Sizes"], ["images", "Images"]] : [["details", "Details"], ["images", "Images"]]).forEach(([key, title], index) => {
         const button = document.createElement("button");
         button.type = "button";
         button.className = "base-editor-tab" + (index === 0 ? " active" : "");
         button.textContent = title;
+        button.dataset.tabKey = key;
         button.setAttribute("role", "tab");
         button.setAttribute("aria-selected", index === 0 ? "true" : "false");
         button.addEventListener("click", () => {
@@ -122,6 +155,14 @@
         panel.className = "base-editor-section";
         panel.hidden = index !== 0;
         panel.dataset.baseSection = key;
+        if (key === "details") {
+          const layout = document.createElement("div"); layout.className = "base-editor-details-layout";
+          detailFields = document.createElement("div"); detailFields.className = "base-editor-detail-fields";
+          const preview = document.createElement("aside"); preview.className = "base-product-preview"; preview.setAttribute("aria-label", "Live product preview");
+          preview.innerHTML = '<div class="base-preview-label"><span><i class="bi bi-eye me-1"></i> Store preview</span><span class="base-preview-visibility">Visible to customers</span></div><div class="base-preview-image-wrap"><img class="base-preview-image" alt="Base product preview"><span class="base-preview-image-empty"><i class="bi bi-image"></i><br>Product image preview</span></div><div class="base-preview-copy"><div class="base-preview-type"></div><h3 class="base-preview-name">Your product name</h3><div class="base-preview-price">$0.00</div><p class="base-preview-description">Your short description will appear here.</p><div class="base-preview-features"></div><div class="base-preview-sizes"></div><a class="base-preview-open" target="_blank" rel="noopener">Open shop page <i class="bi bi-box-arrow-up-right"></i></a></div>';
+          layout.append(detailFields, preview); panel.appendChild(layout);
+          entityForm._baseDetailFields = detailFields; entityForm._basePreview = preview;
+        }
         sections[key] = panel;
         entityForm.appendChild(panel);
       });
@@ -137,9 +178,10 @@
     Object.entries(fieldsConfig || {}).forEach(([field, rule]) => {
       const wrapper = document.createElement("div");
       wrapper.className = "mb-3";
-      const sectionKey = cfg.baseEditor && (field === "images" || field === "image_url" ? "images" :
+      const sectionKey = cfg.productEditor && (field === "images" || field === "image_url" ? "images" :
         ["sizes", "size_stock", "size_guide"].includes(field) ? "sizes" : "details");
-      const target = sectionKey ? entityForm._baseSections[sectionKey] : (fieldTarget || entityForm);
+      const target = sectionKey === "details" && entityForm._baseDetailFields ? entityForm._baseDetailFields :
+        (sectionKey ? entityForm._baseSections[sectionKey] : (fieldTarget || entityForm));
 
       const fkRule = cfg.foreignKeys && cfg.foreignKeys[field];
       const kind = fkRule ? "fk" : fieldKind(rule);
@@ -156,16 +198,17 @@
         const label = document.createElement("label");
         label.className = "form-check-label";
         label.htmlFor = input.id;
-        label.textContent = (rule.label || field) + (rule.required ? " *" : "");
+        label.textContent = (rule.label || field.replaceAll("_", " ")) + (rule.required ? " *" : "");
         wrapper.appendChild(input);
         wrapper.appendChild(label);
+        if (rule.help) { const hint = document.createElement("div"); hint.className = "form-text ms-4"; hint.textContent = rule.help; wrapper.appendChild(hint); }
         target.appendChild(wrapper);
         return;
       }
 
       const label = document.createElement("label");
       label.className = "form-label";
-      label.textContent = (rule.label || field) + (rule.required ? " *" : "");
+      label.textContent = (rule.label || field.replaceAll("_", " ")) + (rule.required ? " *" : "");
       wrapper.appendChild(label);
 
       if (["friendly_list", "friendly_stock", "friendly_size_guide"].includes(rule.type)) {
@@ -192,7 +235,7 @@
 
         const emptyOpt = document.createElement("option");
         emptyOpt.value = "";
-        emptyOpt.textContent = "— Sélectionner —";
+        emptyOpt.textContent = "Choose an artist";
         select.appendChild(emptyOpt);
 
         (fkCache[field] || []).forEach((item) => {
@@ -212,13 +255,13 @@
         if (!rule.required) {
           const emptyOpt = document.createElement("option");
           emptyOpt.value = "";
-          emptyOpt.textContent = "— Sélectionner —";
+          emptyOpt.textContent = "Choose an option";
           select.appendChild(emptyOpt);
         }
         rule.choices.forEach((choice) => {
           const opt = document.createElement("option");
           opt.value = choice;
-          opt.textContent = choice;
+          opt.textContent = (rule.choiceLabels && rule.choiceLabels[choice]) || choice;
           select.appendChild(opt);
         });
         wrapper.appendChild(select);
@@ -234,8 +277,9 @@
         if (kind === "images") {
           const hint = document.createElement("div");
           hint.className = "form-text";
-          hint.textContent = "You can select multiple images. JPEG, PNG, GIF, WebP or AVIF; up to 10 MB each.";
+          hint.textContent = "Add images to the product gallery (up to 10 MB each). Choose a main image below; new images are added to the end.";
           wrapper.appendChild(hint);
+          input.addEventListener("change", updateBasePreview);
         }
       } else if (kind === "json" || kind === "textarea") {
         const input = document.createElement("textarea");
@@ -260,9 +304,13 @@
         wrapper.appendChild(input);
       }
 
+      if (rule.help && !wrapper.querySelector(".form-text")) {
+        const hint = document.createElement("div"); hint.className = "form-text"; hint.textContent = rule.help; wrapper.appendChild(hint);
+      }
+
       target.appendChild(wrapper);
     });
-    if (cfg.baseEditor) {
+    if (cfg.productEditor) {
       const sizesInput = entityForm.querySelector('[name="sizes"]');
       const stockInput = entityForm.querySelector('[name="size_stock"]');
       const stockEditor = entityForm.querySelector('[data-editor-for="size_stock"]');
@@ -275,7 +323,69 @@
         };
         entityForm.querySelector('[data-editor-for="sizes"]')?.addEventListener("input", refreshStockSizes);
       }
+      entityForm.querySelectorAll("input,textarea,select").forEach((input) => {
+        input.addEventListener("input", updateBasePreview);
+        input.addEventListener("change", updateBasePreview);
+      });
+      updateBasePreview();
     }
+  }
+
+  function updateBasePreview() {
+    const preview = entityForm && entityForm._basePreview;
+    if (!preview) return;
+    const read = (name) => entityForm.querySelector(`[name="${name}"]`);
+    const text = (selector, value) => { const node = preview.querySelector(selector); if (node) node.textContent = value; };
+    const name = read("name")?.value.trim() || "Your product name";
+    const descriptionInput = read("description");
+    const description = descriptionInput?.value.trim() || "Your short description will appear here.";
+    const artist = read("artist")?.selectedOptions?.[0]?.textContent;
+    const type = [read("color")?.value, read("type")?.value, artist && artist !== "Choose an artist" ? artist : ""].filter(Boolean).join(" · ");
+    const price = Number(read("price")?.value || 0);
+    text(".base-preview-name", name);
+    text(".base-preview-description", description);
+    preview.querySelector(".base-preview-description").hidden = !descriptionInput;
+    text(".base-preview-type", type);
+    const visibleInput = read("is_active");
+    const visibility = preview.querySelector(".base-preview-visibility");
+    if (visibility) {
+      const visible = !visibleInput || visibleInput.checked;
+      visibility.textContent = visible ? "Visible to customers" : "Hidden from customers";
+      visibility.classList.toggle("is-hidden", !visible);
+    }
+    const openShop = preview.querySelector(".base-preview-open");
+    const recordId = read(cfg.pk)?.value;
+    if (openShop) {
+      openShop.hidden = !recordId || !!visibleInput && !visibleInput.checked;
+      openShop.href = `/product/${cfg.baseEditor ? "base" : "swap"}/${encodeURIComponent(recordId || "")}`;
+    }
+    text(".base-preview-price", read("is_free")?.checked ? "Free" : new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(Number.isFinite(price) ? price : 0));
+    const image = preview.querySelector(".base-preview-image");
+    const empty = preview.querySelector(".base-preview-image-empty");
+    const upload = read("images")?.files?.[0];
+    const selectedMain = entityForm.querySelector('[name="main_image_id"]:checked');
+    const imageUrl = selectedMain?.dataset.previewUrl || read("image_url")?.value.trim() || entityForm.dataset.previewImage || "";
+    if (upload) {
+      const signature = `${upload.name}:${upload.lastModified}:${upload.size}`;
+      if (entityForm.dataset.previewFile !== signature) {
+        if (entityForm.dataset.previewObjectUrl) URL.revokeObjectURL(entityForm.dataset.previewObjectUrl);
+        entityForm.dataset.previewObjectUrl = URL.createObjectURL(upload);
+        entityForm.dataset.previewFile = signature;
+      }
+      image.src = entityForm.dataset.previewObjectUrl;
+    } else {
+      if (entityForm.dataset.previewObjectUrl) URL.revokeObjectURL(entityForm.dataset.previewObjectUrl);
+      delete entityForm.dataset.previewObjectUrl;
+      delete entityForm.dataset.previewFile;
+      if (imageUrl) image.src = imageUrl;
+    }
+    image.hidden = !(upload || imageUrl);
+    empty.hidden = !!(upload || imageUrl);
+    const features = preview.querySelector(".base-preview-features");
+    const sizes = preview.querySelector(".base-preview-sizes");
+    features.replaceChildren(); sizes.replaceChildren();
+    try { (JSON.parse(read("features")?.value || "[]") || []).forEach((value) => { const tag = document.createElement("span"); tag.textContent = value; features.appendChild(tag); }); } catch (_) {}
+    try { (JSON.parse(read("sizes")?.value || "[]") || []).forEach((value) => { const tag = document.createElement("span"); tag.textContent = value; sizes.appendChild(tag); }); } catch (_) {}
   }
 
   function addFriendlyRow(editor, placeholder, value = "") {
@@ -372,7 +482,7 @@
 
   function formatCellValue(field, rule, rawValue) {
     if (cfg.foreignKeys && cfg.foreignKeys[field]) return fkDisplayValue(field, rawValue);
-    if (rule && rule.type === "bool") return rawValue ? "Oui" : "Non";
+    if (rule && rule.type === "bool") return rawValue ? "Yes" : "No";
     return rawValue;
   }
 
@@ -388,7 +498,18 @@
     orderItemsModal.show();
     try {
       const result = await apiRequest(`${cfg.orderItemsApiBase}/${encodeURIComponent(orderId)}/items`);
-      orderItemsSummary.textContent = `${result.fullName || "Customer"} · ${result.status || ""} · Order total ${orderMoney(result.total)}`;
+      orderItemsSummary.textContent = `${result.fullName || "Customer"} · ${cfg.statusLabels?.[result.status] || result.status || ""} · Order total ${orderMoney(result.total)}`;
+      const customer = document.getElementById("order-customer-details");
+      if (customer) {
+        customer.replaceChildren();
+        const details = result.customer || {};
+        [["Email", details.email], ["Phone", details.phone], ["Address", [details.address, details.city, details.region, details.country].filter(Boolean).join(", ")], ["Payment", details.paymentMethod ? details.paymentMethod.replaceAll("_", " ") : ""]].forEach(([label, value]) => {
+          if (!value) return;
+          const line = document.createElement("div"); line.className = "order-customer-line";
+          const strong = document.createElement("strong"); strong.textContent = `${label}: `;
+          line.append(strong, document.createTextNode(value)); customer.appendChild(line);
+        });
+      }
       orderItemsBody.replaceChildren();
       if (!result.items?.length) {
         orderItemsBody.innerHTML = '<tr><td colspan="6" class="text-muted text-center py-4">This order has no items.</td></tr>';
@@ -414,6 +535,50 @@
       row.appendChild(cell);
       orderItemsBody.replaceChildren(row);
     }
+  }
+
+  function renderStockCell(td, field, rawValue, item) {
+    const rule = cfg.stockFields && cfg.stockFields[field];
+    if (!rule) return false;
+    const badge = (label, state) => { const el = document.createElement("span"); el.className = `stock-badge stock-${state}`; el.textContent = label; td.appendChild(el); };
+    if (rule.type === "quantity") {
+      const quantity = rawValue == null || rawValue === "" ? null : Number(rawValue);
+      if (quantity === null || !Number.isFinite(quantity)) badge("Not tracked", "unknown");
+      else if (quantity <= 0) badge("Out of stock", "out");
+      else if (quantity <= (rule.lowThreshold || 3)) badge(`Low · ${quantity} left`, "low");
+      else badge(`In stock · ${quantity}`, "in");
+      return true;
+    }
+    if (rule.type === "size_map") {
+      let stock = {};
+      try { stock = rawValue && typeof rawValue === "object" ? rawValue : JSON.parse(rawValue || "{}"); } catch (_) {}
+      let sizes = [];
+      try { sizes = item.sizes && typeof item.sizes === "object" ? item.sizes : JSON.parse(item.sizes || "[]"); } catch (_) {}
+      if (!Object.keys(stock).length) { badge("Not tracked", "unknown"); return true; }
+      (sizes.length ? sizes : Object.keys(stock)).forEach((size) => {
+        const quantity = Object.prototype.hasOwnProperty.call(stock, size) ? Number(stock[size]) : null;
+        const label = document.createElement("span");
+        label.className = `stock-size-badge ${quantity === null ? "stock-unknown" : quantity <= 0 ? "stock-out" : quantity <= (rule.lowThreshold || 3) ? "stock-low" : "stock-in"}`;
+        label.textContent = `${size}: ${quantity === null ? "Not tracked" : quantity <= 0 ? "Out" : quantity}`;
+        label.title = quantity === null ? `${size}: stock not tracked` : `${size}: ${quantity} in stock`;
+        td.appendChild(label);
+      });
+      return true;
+    }
+    return false;
+  }
+
+  async function setOrderStatus(item, status, label) {
+    const needsConfirm = ["confirmed", "shipped", "cancelled"].includes(status);
+    if (needsConfirm && !(await confirmAction(`${label} for order #${item[cfg.pk]}?`))) return;
+    try {
+      await apiRequest(apiUrl("/" + item[cfg.pk]), { method: "PUT", body: JSON.stringify({ status }) });
+      showUndoToast(`Order #${item[cfg.pk]} updated: ${label.toLowerCase()}.`, async () => {
+        await apiRequest(apiUrl("/" + item[cfg.pk]), { method: "PUT", body: JSON.stringify({ status: item.status }) });
+        fetchList();
+      });
+      fetchList();
+    } catch (error) { showToast(error.message, "danger"); }
   }
 
   function updateBulkBar() {
@@ -458,7 +623,19 @@
       const isDataLike = field === cfg.pk || (rule && (rule.type === "int" || rule.type === "float"));
       if (isDataLike) td.classList.add("cell-mono");
 
-      if (rule && rule.type === "images" && Array.isArray(rawValue)) {
+      if (renderStockCell(td, field, rawValue, item)) {
+        // Stock has a dedicated, plain-language status display.
+      } else if (cfg.statusLabels && field === "status" && rawValue != null) {
+        const status = document.createElement("span");
+        const key = String(rawValue).toLowerCase();
+        status.className = "status-pill status-" + key.replace(/[^a-z0-9-]/g, "");
+        status.textContent = cfg.statusLabels[key] || key.replaceAll("_", " ");
+        td.appendChild(status);
+      } else if (cfg.jsonListFields && cfg.jsonListFields.includes(field)) {
+        let values = [];
+        try { values = Array.isArray(rawValue) ? rawValue : JSON.parse(rawValue || "[]"); } catch (_) {}
+        values.forEach((value) => { const tag = document.createElement("span"); tag.className = "admin-list-tag"; tag.textContent = value; td.appendChild(tag); });
+      } else if (rule && rule.type === "images" && Array.isArray(rawValue)) {
         rawValue.slice(0, 4).forEach((image) => {
           const img = document.createElement("img");
           img.src = image.url;
@@ -478,8 +655,11 @@
         const link = document.createElement("a");
         link.href = "/uploads/" + rawValue;
         link.target = "_blank";
-        link.textContent = "voir le fichier";
+        link.textContent = "View file";
         td.appendChild(link);
+      } else if (field === "created_at" && rawValue) {
+        const date = new Date(rawValue);
+        td.textContent = Number.isNaN(date.getTime()) ? String(rawValue) : date.toLocaleString();
       } else {
         const value = formatCellValue(field, rule, rawValue);
         td.textContent = value === null || value === undefined ? "" : value;
@@ -501,12 +681,31 @@
       actionsTd.appendChild(btn);
     }
 
+    if (cfg.orderWorkflow) {
+      const status = String(item.status || "pending").toLowerCase();
+      const next = status === "pending" ? ["contacted", "Mark contacted"]
+        : status === "contacted" ? ["confirmed", "Confirm order"]
+        : ["shipped", "Mark shipped"];
+      if (!["shipped", "cancelled"].includes(status)) {
+        const advance = document.createElement("button");
+        advance.type = "button";
+        advance.className = "btn btn-sm btn-outline-success me-1";
+        advance.textContent = next[1];
+        advance.addEventListener("click", () => setOrderStatus(item, next[0], next[1]));
+        actionsTd.appendChild(advance);
+        const cancel = document.createElement("button");
+        cancel.type = "button"; cancel.className = "btn btn-sm btn-outline-danger me-1"; cancel.textContent = "Cancel";
+        cancel.addEventListener("click", () => setOrderStatus(item, "cancelled", "Cancel order"));
+        actionsTd.appendChild(cancel);
+      }
+    }
+
     if (cfg.actions.includes("update")) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "btn btn-sm btn-outline-primary btn-icon me-1";
       btn.innerHTML = '<i class="bi bi-pencil"></i>';
-      btn.title = "Modifier";
+      btn.title = "Edit";
       btn.addEventListener("click", () => openEditModal(item));
       actionsTd.appendChild(btn);
     }
@@ -520,12 +719,12 @@
       actionsTd.appendChild(btn);
     });
 
-    if (cfg.actions.includes("delete") || cfg.actions.includes("update")) {
+    if (cfg.actions.includes("delete")) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "btn btn-sm btn-outline-danger btn-icon";
       btn.innerHTML = '<i class="bi bi-trash3"></i>';
-      btn.title = "Supprimer";
+      btn.title = "Delete";
       btn.addEventListener("click", () => deleteItem(item[cfg.pk]));
       actionsTd.appendChild(btn);
     }
@@ -537,20 +736,20 @@
   function renderLoading() {
     const colspan = cfg.listFields.length + 2;
     tableBody.innerHTML = `<tr class="table-loading-row"><td colspan="${colspan}">
-      <div class="spinner-border spinner-border-sm text-secondary me-2" role="status"></div>Chargement...
+      <div class="spinner-border spinner-border-sm text-secondary me-2" role="status"></div>Loading...
     </td></tr>`;
   }
 
   function renderEmpty() {
     const colspan = cfg.listFields.length + 2;
     tableBody.innerHTML = `<tr class="table-empty-row"><td colspan="${colspan}">
-      <i class="bi bi-inbox fs-3 d-block mb-2"></i>Aucun résultat
+      <i class="bi bi-inbox fs-3 d-block mb-2"></i>No results found
     </td></tr>`;
   }
 
   function updateResultCount(total) {
     const el = document.getElementById("result-count");
-    if (el) el.textContent = total + (total > 1 ? " résultats" : " résultat");
+    if (el) el.textContent = total + (total === 1 ? " result" : " results");
   }
 
   function updatePagination(result) {
@@ -633,15 +832,26 @@
 
   function openCreateModal() {
     mode = "create";
-    modalTitle.textContent = "Ajouter";
+    modalTitle.textContent = `Add ${friendlyEntityName()}`;
     buildFormFields(cfg.insertFields);
+    formDirty = false;
+    savingEntity = false;
+    if (btnSave) btnSave.innerHTML = `<i class="bi bi-check-lg"></i> Add ${friendlyEntityName()}`;
+    if (cfg.productEditor) { entityForm.dataset.previewImage = ""; updateBasePreview(); }
     bsModal.show();
   }
 
   function openEditModal(item) {
     mode = "edit";
-    modalTitle.textContent = "Modifier";
+    modalTitle.textContent = `Edit ${friendlyEntityName()}`;
     buildFormFields(cfg.updateFields);
+    formDirty = false;
+    savingEntity = false;
+    if (btnSave) btnSave.innerHTML = '<i class="bi bi-check-lg"></i> Save changes';
+    if (cfg.productEditor) {
+      const images = Array.isArray(item.images) ? item.images : [];
+      entityForm.dataset.previewImage = images[0]?.originalUrl || images[0]?.url || "";
+    }
     Object.entries(cfg.updateFields || {}).forEach(([field, rule]) => {
       const input = entityForm.querySelector(`[name="${field}"]`);
       if (!input) return;
@@ -663,7 +873,7 @@
         if (images.length) {
           const gallery = document.createElement("div");
           gallery.className = "admin-image-gallery";
-          images.forEach((image) => {
+          images.forEach((image, imageIndex) => {
             const card = document.createElement("div");
             card.className = "admin-image-item";
             const img = document.createElement("img");
@@ -671,34 +881,61 @@
             img.alt = "Uploaded product image";
             const meta = document.createElement("div");
             meta.className = "admin-image-meta";
+            const mainLabel = document.createElement("label");
+            const mainImage = document.createElement("input");
+            mainImage.type = "radio"; mainImage.name = "main_image_id"; mainImage.value = image.id;
+            mainImage.dataset.previewUrl = image.originalUrl || image.url;
+            const firstStorefrontImage = images.find((candidate) => !candidate.showroomPlaceholder);
+            mainImage.disabled = !!(cfg.baseEditor && image.showroomPlaceholder);
+            mainImage.checked = (!cfg.baseEditor || !image.showroomPlaceholder) && image.id === (cfg.baseEditor ? firstStorefrontImage?.id : images[0]?.id);
+            mainImage.title = "Show this image first on the storefront";
+            mainImage.addEventListener("change", updateBasePreview);
+            mainLabel.append(mainImage, document.createTextNode(cfg.baseEditor && image.showroomPlaceholder ? " Mix placeholder" : " Main image"));
+            meta.appendChild(mainLabel);
             const showroomLabel = document.createElement("label");
-            const showroom = document.createElement("input");
-            showroom.type = "radio";
-            showroom.name = "showroom_image_id";
-            showroom.value = image.id;
-            showroom.checked = !!image.useInShowroom;
-            showroom.title = "Use this image in the showroom preview";
-            showroomLabel.append(showroom, document.createTextNode(" Showroom"));
+            let showroom;
+            if (cfg.baseEditor) {
+              showroom = document.createElement("input");
+              showroom.type = "radio";
+              showroom.name = "showroom_image_id";
+              showroom.value = image.id;
+              showroom.checked = !!image.useInShowroom;
+              showroom.title = "Use this image in the mix preview";
+              showroomLabel.append(showroom, document.createTextNode(" Mix preview"));
+              meta.appendChild(showroomLabel);
+            }
             const remove = document.createElement("input");
             remove.type = "checkbox";
             remove.name = "remove_image_ids";
             remove.value = image.id;
             remove.title = "Remove this image";
             remove.addEventListener("change", () => {
-              if (remove.checked && showroom.checked) {
-                remove.checked = false;
-                showToast("Choose a different showroom image before removing this one.", "warning");
+              if (remove.checked && mainImage.checked) {
+                mainImage.checked = false;
+                const replacement = gallery.querySelector('input[name="main_image_id"]:checked');
+                if (!replacement) {
+                  const next = Array.from(gallery.querySelectorAll('input[name="main_image_id"]')).find((radio) => radio !== mainImage && !radio.disabled && !radio.closest(".admin-image-item").querySelector('[name="remove_image_ids"]:checked'));
+                  if (next) next.checked = true;
+                  else remove.checked = false;
+                }
               }
+              if (remove.checked && showroom?.checked) {
+                remove.checked = false;
+                showToast("Choose another mix preview image before removing this one.", "warning");
+              }
+              updateBasePreview();
             });
             const removeLabel = document.createElement("label");
             removeLabel.append(remove, document.createTextNode(" Remove"));
-            meta.append(showroomLabel, removeLabel);
+            meta.append(removeLabel);
             card.append(img, meta);
             gallery.appendChild(card);
           });
           const hint = document.createElement("div");
           hint.className = "form-text";
-          hint.textContent = "Choose the showroom preview image. Select images to remove; new uploads are added to this gallery.";
+          hint.textContent = cfg.baseEditor
+            ? "Choose which image appears first on the storefront and which image is used in the mix preview. New uploads are added to the gallery."
+            : "Choose which image appears first on the storefront. New uploads are added to the gallery.";
           input.insertAdjacentElement("afterend", gallery);
           gallery.insertAdjacentElement("afterend", hint);
         }
@@ -718,7 +955,22 @@
       }
     });
     entityForm.querySelector(`[name="${cfg.pk}"]`).value = item[cfg.pk];
+    if (cfg.productEditor) updateBasePreview();
     bsModal.show();
+  }
+
+  function validateRequiredFields(fieldsConfig) {
+    for (const [field, rule] of Object.entries(fieldsConfig || {})) {
+      if (!rule.required) continue;
+      const input = entityForm.querySelector(`[name="${field}"]`);
+      if (!input || (input.type === "checkbox" ? input.checked : String(input.value || "").trim() !== "")) continue;
+      const section = input.closest("[data-base-section]");
+      if (section) entityForm.querySelector(`.base-editor-tab[data-tab-key="${section.dataset.baseSection}"]`)?.click();
+      input.focus();
+      showToast(`Please fill in “${rule.label || field.replaceAll("_", " ")}” before saving.`, "warning");
+      return false;
+    }
+    return true;
   }
 
   function hasFileField(fieldsConfig) {
@@ -760,6 +1012,8 @@
     });
     const showroomChoice = entityForm.querySelector('[name="showroom_image_id"]:checked');
     if (showroomChoice) payload.showroom_image_id = showroomChoice.value;
+    const mainImageChoice = entityForm.querySelector('[name="main_image_id"]:checked');
+    if (mainImageChoice) payload.main_image_id = mainImageChoice.value;
     return payload;
   }
 
@@ -776,29 +1030,67 @@
     const isCreate = mode === "create";
     const fieldsConfig = isCreate ? cfg.insertFields : cfg.updateFields;
     try {
+      if (!validateRequiredFields(fieldsConfig)) return;
       const payload = collectPayload(fieldsConfig);
-      const body = hasFileField(fieldsConfig) ? toFormData(payload) : JSON.stringify(payload);
-      if (isCreate) {
-        await apiRequest(apiUrl(), { method: "POST", body });
-        showToast("Créé avec succès.", "success");
-      } else {
-        const id = entityForm.querySelector(`[name="${cfg.pk}"]`).value;
-        await apiRequest(apiUrl("/" + id), { method: "PUT", body });
-        showToast("Modifié avec succès.", "success");
+      const recordId = !isCreate ? entityForm.querySelector(`[name="${cfg.pk}"]`).value : null;
+      const original = !isCreate ? lastItems.find((row) => String(row[cfg.pk]) === String(recordId)) : null;
+      const previousValues = {};
+      const changedFields = [];
+      let photoChanges = !!(payload.images?.length || payload.remove_image_ids?.length);
+      if (original?.images?.length) {
+        const selectedMain = payload.main_image_id;
+        const oldMain = original.images.find((image) => cfg.baseEditor ? !image.showroomPlaceholder : true);
+        if (selectedMain && oldMain && String(selectedMain) !== String(oldMain.id)) photoChanges = true;
+        const selectedShowroom = payload.showroom_image_id;
+        const oldShowroom = original.images.find((image) => image.useInShowroom);
+        if (selectedShowroom && oldShowroom && String(selectedShowroom) !== String(oldShowroom.id)) photoChanges = true;
       }
+      if (original) Object.keys(fieldsConfig || {}).forEach((field) => {
+        if (["images", "main_image_id", "remove_image_ids"].includes(field)) return;
+        const oldValue = original[field] !== undefined ? original[field] : original[`${field}_id`];
+        if (JSON.stringify(oldValue ?? null) !== JSON.stringify(payload[field] ?? null)) {
+          previousValues[field] = oldValue ?? null;
+          changedFields.push(field);
+        }
+      });
+      const body = hasFileField(fieldsConfig) ? toFormData(payload) : JSON.stringify(payload);
+      savingEntity = true;
+      if (btnSave) btnSave.disabled = true;
+      if (isCreate) {
+        const created = await apiRequest(apiUrl(), { method: "POST", body });
+        showUndoToast("Added successfully.", async () => {
+          await apiRequest(apiUrl("/" + created[cfg.pk]), { method: "DELETE" });
+          fetchList();
+        });
+      } else {
+        await apiRequest(apiUrl("/" + recordId), { method: "PUT", body });
+        if (changedFields.length) showUndoToast(photoChanges ? "Product saved. Undo details and stock changes." : "Changes saved.", async () => {
+          await apiRequest(apiUrl("/" + recordId), { method: "PUT", body: JSON.stringify(previousValues) });
+          fetchList();
+        });
+        else if (photoChanges) showToast("Product photos saved.", "success");
+        else showToast("Changes saved.", "success");
+      }
+      formDirty = false;
+      savingEntity = false;
+      if (btnSave) btnSave.disabled = false;
       bsModal.hide();
       fetchList();
     } catch (e) {
+      savingEntity = false;
+      if (btnSave) btnSave.disabled = false;
       showToast(e.message, "danger");
     }
   }
 
   async function deleteItem(id) {
-    const ok = await confirmAction("Confirmer la suppression ?");
+    const item = lastItems.find((row) => String(row[cfg.pk]) === String(id));
+    const label = item && (item.name || item.full_name || item.email || item[cfg.pk]);
+    const ok = await confirmAction(`Delete ${label ? `“${label}”` : "this item"} permanently? This cannot be undone.`);
     if (!ok) return;
     try {
       await apiRequest(apiUrl("/" + id), { method: "DELETE" });
-      showToast("Supprimé.", "success");
+      showToast("Deleted.", "success");
       fetchList();
     } catch (e) {
       showToast(e.message, "danger");
@@ -808,11 +1100,11 @@
   async function bulkDeleteSelected() {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
-    const ok = await confirmAction(`Supprimer les ${ids.length} élément(s) sélectionné(s) ?`);
+    const ok = await confirmAction(`Delete the ${ids.length} selected items permanently?`);
     if (!ok) return;
     try {
       await Promise.all(ids.map((id) => apiRequest(apiUrl("/" + id), { method: "DELETE" })));
-      showToast(`${ids.length} élément(s) supprimé(s).`, "success");
+      showToast(`Deleted ${ids.length} items.`, "success");
       fetchList();
     } catch (e) {
       showToast(e.message, "danger");
@@ -916,7 +1208,7 @@
 
   async function runCustomAction(id, action) {
     if (action.confirm) {
-      const ok = await confirmAction(`Confirmer l'action "${action.label || action.name}" ?`);
+      const ok = await confirmAction(`Run “${action.label || action.name}” for this item?`);
       if (!ok) return;
     }
 
@@ -939,7 +1231,7 @@
         method,
         ...(isGetLike ? {} : { body: JSON.stringify(paramValues) }),
       });
-      showToast("Action effectuée.", "success");
+      showToast("Action completed.", "success");
       fetchList();
     } catch (e) {
       showToast(e.message, "danger");
@@ -949,7 +1241,8 @@
   function toCsv(rows) {
     const headers = cfg.listFields;
     const escape = (v) => `"${String(v != null ? v : "").replace(/"/g, '""')}"`;
-    const lines = [headers.map(escape).join(",")];
+    const displayHeaders = headers.map((field) => (cfg.listFieldLabels && cfg.listFieldLabels[field]) || field.replaceAll("_", " "));
+    const lines = [displayHeaders.map(escape).join(",")];
     rows.forEach((row) => {
       lines.push(headers.map((f) => escape(formatCellValue(f, null, row[f]))).join(","));
     });
@@ -978,7 +1271,10 @@
     }
   }
 
-  if (btnAdd) btnAdd.addEventListener("click", openCreateModal);
+  if (btnAdd) {
+    if (cfg.entityLabel) btnAdd.innerHTML = `<i class="bi bi-plus-lg"></i> Add ${friendlyEntityName()}`;
+    btnAdd.addEventListener("click", openCreateModal);
+  }
   if (btnSave) btnSave.addEventListener("click", saveEntity);
   if (btnExportCsv) btnExportCsv.addEventListener("click", exportCsv);
   if (btnBulkDelete) btnBulkDelete.addEventListener("click", bulkDeleteSelected);
@@ -999,6 +1295,15 @@
       e.preventDefault();
       runSearch(Object.fromEntries(new FormData(searchForm).entries()));
     });
+    const initialParams = new URLSearchParams(window.location.search);
+    let hasInitialFilters = false;
+    initialParams.forEach((value, key) => {
+      const input = searchForm.elements.namedItem(key);
+      if (!input || !value) return;
+      input.value = value;
+      hasInitialFilters = true;
+    });
+    if (hasInitialFilters) state.searchParams = Object.fromEntries(new FormData(searchForm).entries());
   }
   if (btnResetSearch) {
     btnResetSearch.addEventListener("click", () => {
@@ -1013,6 +1318,21 @@
   document.querySelectorAll(".sortable-th").forEach((th) => {
     th.addEventListener("click", () => applySort(th.dataset.field));
   });
+
+  if (entityForm) {
+    entityForm.addEventListener("input", () => { formDirty = true; });
+    entityForm.addEventListener("change", () => { formDirty = true; });
+  }
+  if (modalEl) {
+    modalEl.addEventListener("hide.bs.modal", (event) => {
+      if (allowModalClose || !formDirty) { allowModalClose = false; return; }
+      if (savingEntity) { event.preventDefault(); return; }
+      event.preventDefault();
+      confirmAction("You have unsaved changes. Discard them and close this form?").then((confirmed) => {
+        if (confirmed) { formDirty = false; allowModalClose = true; bsModal.hide(); }
+      });
+    });
+  }
 
   loadForeignKeyOptions().then(fetchList);
 })();

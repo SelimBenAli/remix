@@ -48,8 +48,10 @@ class Order(Model):
     def search_fields(cls):
         return {
             "full_name": {"type": str, "operator": "like"},
+            "id": {"type": int, "operator": "eq"},
             "email": {"type": str, "operator": "like"},
-            "status": {"type": str, "operator": "eq"},
+            "phone": {"type": str, "operator": "like"},
+            "status": {"type": str, "operator": "in"},
         }
 
     @classmethod

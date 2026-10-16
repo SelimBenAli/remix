@@ -1,7 +1,7 @@
 {% extends "admin/base.html" %}
 
-{% block title %}Tableau de bord{% endblock %}
-{% block page_title %}Tableau de bord{% endblock %}
+{% block title %}Admin dashboard{% endblock %}
+{% block page_title %}Admin dashboard{% endblock %}
 
 {% block content %}
 {% if socketio_enabled %}
@@ -20,12 +20,34 @@
 </section>
 {% endif %}
 <div class="content-panel">
-  <p class="text-muted mb-4">Choisis une section à gérer.</p>
+  <p class="text-muted mb-4">Choose an area to manage your store.</p>
+  <div class="admin-dashboard-stats">
+    <a class="admin-stat-card" href="/admin/orders?status=pending,contacted"><span>Orders to follow up</span><strong>{{ pending_order_count }}</strong><small>New or contacted</small></a>
+    <a class="admin-stat-card" href="/admin/orders"><span>Orders placed today</span><strong>{{ today_order_count }}</strong><small>View all orders</small></a>
+    <a class="admin-stat-card {% if low_stock_count %}admin-stat-alert{% endif %}" href="/admin/bases"><span>Low stock products</span><strong>{{ low_stock_count }}</strong><small>3 or fewer in stock</small></a>
+  </div>
+  <div class="admin-dashboard-columns">
+    <section class="admin-dashboard-list">
+      <div class="panel-toolbar"><h2 class="h5 mb-0">Orders needing attention</h2><a href="/admin/orders?status=pending,contacted">View orders</a></div>
+      {% if pending_orders %}
+      <div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Order</th><th>Customer</th><th>Status</th><th>Placed</th></tr></thead><tbody>
+        {% for order in pending_orders %}<tr><td><a href="/admin/orders?id={{ order.id }}">#{{ order.id }}</a></td><td>{{ order.full_name }}</td><td>{{ 'Contacted' if order.status == 'contacted' else 'New' }}</td><td>{{ order.created_at.strftime('%d %b, %H:%M') }}</td></tr>{% endfor %}
+      </tbody></table></div>
+      {% else %}<p class="text-muted mb-0">No orders are waiting for follow-up.</p>{% endif %}
+    </section>
+    <section class="admin-dashboard-list">
+      <div class="panel-toolbar"><h2 class="h5 mb-0">Recently placed</h2><a href="/admin/orders">All orders</a></div>
+      {% if recent_orders %}<ul class="admin-recent-orders list-unstyled mb-0">
+        {% for order in recent_orders %}<li><a href="/admin/orders?id={{ order.id }}"><strong>#{{ order.id }} · {{ order.full_name }}</strong><span>{{ order.created_at.strftime('%d %b, %H:%M') }} · {{ order.total }}</span></a></li>{% endfor %}
+      </ul>{% else %}<p class="text-muted mb-0">No orders yet.</p>{% endif %}
+    </section>
+  </div>
+  {% if low_stock %}<section class="admin-low-stock"><h2 class="h6">Products running low</h2><div class="d-flex flex-wrap gap-2">{% for item in low_stock %}<a class="admin-low-stock-tag" href="{{ item.url }}">{{ item.name }}</a>{% endfor %}</div></section>{% endif %}
   <div class="index-grid">
     {% for item in menu_items %}
     <a class="index-tile" href="{{ item.url }}">{{ item.label }}</a>
     {% else %}
-    <p class="text-muted">Aucune section n'est configurée pour apparaître ici (show_in_menu).</p>
+    <p class="text-muted">No admin sections are available here yet.</p>
     {% endfor %}
   </div>
 </div>

@@ -138,6 +138,15 @@ def get_order_items_view(id):
         "fullName": order.full_name,
         "total": float(order.total or 0),
         "status": order.status,
+        "customer": {
+            "email": order.email,
+            "phone": order.phone,
+            "address": order.address,
+            "region": order.region,
+            "city": order.city,
+            "country": order.country,
+            "paymentMethod": order.payment_method,
+        },
         "items": [{
             "kind": item.kind,
             "name": item.name,

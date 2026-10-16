@@ -9,15 +9,15 @@
     <span class="result-count" id="result-count"></span>
     <div class="toolbar-actions">
       <button class="btn btn-outline-secondary btn-icon" id="btn-export-csv">
-        <i class="bi bi-download"></i> Export CSV
+        <i class="bi bi-download"></i> Download list
       </button>
       {% if 'create' in actions %}
-      <label class="btn btn-outline-secondary btn-icon mb-0">
-        <i class="bi bi-upload"></i> Import CSV
+      <label class="btn btn-outline-secondary btn-icon mb-0 advanced-import-control">
+        <i class="bi bi-upload"></i> Import list (.CSV)
         <input type="file" id="btn-import-csv" accept=".csv,text/csv" hidden>
       </label>
       <button class="btn btn-primary btn-icon" id="btn-add">
-        <i class="bi bi-plus-lg"></i> Ajouter
+        <i class="bi bi-plus-lg"></i> Add new
       </button>
       {% endif %}
     </div>
@@ -27,35 +27,37 @@
   <form class="row row-cols-auto g-2 mb-4 align-items-end" id="search-form">
     {% for field in search_fields %}
     <div class="col">
-      <label class="form-label small text-muted mb-1">{{ field }}</label>
+        <label class="form-label small text-muted mb-1">{{ field_labels.get(field, field.replace('_', ' ')|title) }}</label>
       <div class="input-group input-group-sm">
         <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-        <input type="text" class="form-control" name="{{ field }}" placeholder="{{ field }}">
+        {% if field == 'status' and status_choices %}
+        <select class="form-select" name="{{ field }}"><option value="">Any stage</option>{% for value, label in status_choices.items() %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select>
+        {% else %}<input type="{{ 'number' if field == 'id' else 'text' }}" class="form-control" name="{{ field }}" placeholder="{{ 'Order number' if field == 'id' else 'Search ' ~ field_labels.get(field, field.replace('_', ' ')|lower) }}">{% endif %}
       </div>
     </div>
     {% endfor %}
     <div class="col">
       <button type="submit" class="btn btn-sm btn-primary btn-icon">
-        <i class="bi bi-funnel"></i> Filtrer
+        <i class="bi bi-funnel"></i> Apply filters
       </button>
       <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-reset-search">
-        Réinitialiser
+        Clear filters
       </button>
     </div>
   </form>
   {% endif %}
 
-  {% if 'delete' in actions or 'update' in actions %}
+  {% if 'delete' in actions or 'bulk_update' in actions %}
   <div class="alert alert-secondary d-none align-items-center justify-content-between py-2 mb-3" id="bulk-bar">
-    <span><strong id="bulk-count">0</strong> sélectionné(s)</span>
+    <span><strong id="bulk-count">0</strong> selected</span>
     {% if 'update' in actions %}
     <button type="button" class="btn btn-sm btn-outline-primary btn-icon" id="btn-bulk-update">
-      <i class="bi bi-pencil"></i> Modifier la sélection
+      <i class="bi bi-pencil"></i> Edit selected
     </button>
     {% endif %}
     {% if 'delete' in actions %}
     <button type="button" class="btn btn-sm btn-danger btn-icon" id="btn-bulk-delete">
-      <i class="bi bi-trash3"></i> Supprimer la sélection
+      <i class="bi bi-trash3"></i> Delete selected
     </button>
     {% endif %}
   </div>
@@ -65,12 +67,12 @@
     <table class="table table-hover align-middle mb-0">
       <thead>
         <tr>
-          {% if 'delete' in actions or 'update' in actions %}
+          {% if 'delete' in actions or 'bulk_update' in actions %}
           <th style="width: 2rem;"><input type="checkbox" class="form-check-input" id="select-all"></th>
           {% endif %}
           {% for field in list_fields %}
           <th class="sortable-th" data-field="{{ field }}" role="button">
-            {{ field_labels[field] }}
+            {{ field_labels[field] | replace('_', ' ') | title }}
             <i class="bi sort-icon" data-field="{{ field }}"></i>
           </th>
           {% endfor %}
@@ -85,10 +87,10 @@
     <small class="text-muted" id="page-indicator"></small>
     <div class="btn-group btn-group-sm">
       <button type="button" class="btn btn-outline-secondary" id="btn-prev-page">
-        <i class="bi bi-chevron-left"></i> Précédent
+        <i class="bi bi-chevron-left"></i> Previous
       </button>
       <button type="button" class="btn btn-outline-secondary" id="btn-next-page">
-        Suivant <i class="bi bi-chevron-right"></i>
+        Next <i class="bi bi-chevron-right"></i>
       </button>
     </div>
   </div>
@@ -98,16 +100,16 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="entity-modal-title">Ajouter</h5>
+        <h5 class="modal-title" id="entity-modal-title">Add new</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
         <form id="entity-form"></form>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-primary btn-icon" id="btn-save">
-          <i class="bi bi-check-lg"></i> Enregistrer
+          <i class="bi bi-check-lg"></i> Save changes
         </button>
       </div>
     </div>
@@ -125,6 +127,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
+        <div class="order-customer-details" id="order-customer-details" aria-label="Customer contact and delivery details"></div>
         <div class="table-responsive">
           <table class="table table-sm align-middle mb-0">
             <thead><tr><th>Item</th><th>Type</th><th>Size</th><th class="text-end">Qty</th><th class="text-end">Unit price</th><th class="text-end">Line total</th></tr></thead>
@@ -141,10 +144,14 @@
 {% block scripts %}
 <script>
   window.ENTITY_CONFIG = {
+    entityLabel: "order",
+    orderWorkflow: true,
+    statusLabels: { pending: "New", contacted: "Contacted", confirmed: "Confirmed", paid: "Confirmed", shipped: "Shipped", cancelled: "Cancelled" },
     apiBase: {{ api_base | tojson }},
     orderItemsApiBase: {{ api_base | tojson }},
     pk: {{ pk | tojson }},
     listFields: {{ list_fields | tojson }},
+    listFieldLabels: {{ field_labels | tojson }},
     insertFields: {{ insert_fields | tojson }},
     updateFields: {{ update_fields | tojson }},
     searchFields: {{ search_fields | tojson }},
@@ -153,5 +160,5 @@
     foreignKeys: {{ foreign_keys | tojson }},
   };
 </script>
-<script src="{{ url_for('static', filename='js/admin-table.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin-table.js', v='20261016-10') }}"></script>
 {% endblock %}

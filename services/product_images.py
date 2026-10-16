@@ -51,6 +51,21 @@ def set_showroom_image(base, image_id):
     return True
 
 
+def set_primary_image(product, image_id):
+    """Move a selected gallery image to the first position for storefronts."""
+    relation = ProductImage.base if product.__class__.__name__ == "Base" else ProductImage.swap
+    selected = ProductImage.get_or_none((ProductImage.id == image_id) & (relation == product))
+    if selected is None:
+        return False
+    images = list(ProductImage.select().where(relation == product).order_by(ProductImage.sort_order, ProductImage.id))
+    images.remove(selected)
+    images.insert(0, selected)
+    with ProductImage._meta.database.atomic():
+        for index, image in enumerate(images):
+            ProductImage.update(sort_order=index).where(ProductImage.id == image.id).execute()
+    return True
+
+
 def ensure_base_showroom_images(upload_folder, app_root):
     """Install the example transparent garment placeholder for bases lacking one."""
     source = os.path.join(app_root, "static", "images", "try", "empty_back.avif")

@@ -2,41 +2,48 @@
 Vues auto-générées (pages admin) — scaffold_frontend.py.
 Relance avec --force pour régénérer ce fichier après ajout d'un modèle.
 """
+import json
+from datetime import date
+
 from flask import render_template
 from auth import login_required, generate_csrf_token
 from models.product_request import ProductRequest
+
+from models.base import Base
+from models.order import Order
+from models.swap import Swap
 
 from . import admin_ui_bp
 
 MENU_ITEMS = [
     {
         "key": "artist",
-        "label": "Artist",
+        "label": "Artists",
         "url": "/admin/artists"
     },
     {
         "key": "base",
-        "label": "Base",
+        "label": "Bases",
         "url": "/admin/bases"
     },
     {
         "key": "order",
-        "label": "Order",
+        "label": "Orders",
         "url": "/admin/orders"
     },
     {
         "key": "review",
-        "label": "Review",
+        "label": "Reviews",
         "url": "/admin/reviews"
     },
     {
         "key": "subscriber",
-        "label": "Subscriber",
+        "label": "Email subscribers",
         "url": "/admin/subscribers"
     },
     {
         "key": "swap",
-        "label": "Swap",
+        "label": "Swaps",
         "url": "/admin/swaps"
     },
     {
@@ -46,7 +53,7 @@ MENU_ITEMS = [
     },
     {
         "key": "user",
-        "label": "User",
+        "label": "Customers",
         "url": "/admin/users"
     }
 ]
@@ -66,7 +73,7 @@ def artist_list():
         socketio_enabled=SOCKETIO_ENABLED,
         audit_enabled=AUDIT_ENABLED,
         csrf_token=generate_csrf_token(),
-        menu_label='Artist',
+        menu_label='Artists',
         pk='id',
         api_base='/api/artists',
         list_fields=['id', 'name', 'bio', 'avatar_url'],
@@ -92,13 +99,13 @@ def base_list():
         socketio_enabled=SOCKETIO_ENABLED,
         audit_enabled=AUDIT_ENABLED,
         csrf_token=generate_csrf_token(),
-        menu_label='Base',
+        menu_label='Bases',
         pk='id',
         api_base='/api/bases',
-        list_fields=['id', 'name', 'type', 'color', 'price', 'badge', 'sizes', 'included_panel', 'sold_out', 'ordered_even_out_of_stock', 'is_active'],
-        field_labels={'id': 'id', 'name': 'name', 'type': 'type', 'color': 'color', 'price': 'price',
-                      'badge': 'badge', 'sizes': 'sizes', 'included_panel': 'includes panel',
-                      'sold_out': 'sold_out', 'ordered_even_out_of_stock': 'Allow order when out of stock', 'is_active': 'is_active'},
+        list_fields=['id', 'name', 'type', 'color', 'price', 'badge', 'sizes', 'size_stock', 'included_panel', 'sold_out', 'ordered_even_out_of_stock', 'is_active'],
+        field_labels={'id': 'ID', 'name': 'Product name', 'type': 'Type', 'color': 'Color', 'price': 'Price',
+                      'badge': 'Label', 'sizes': 'Sizes', 'size_stock': 'Stock by size', 'included_panel': 'Includes panel',
+                      'sold_out': 'Sold out', 'ordered_even_out_of_stock': 'Allow orders when sold out', 'is_active': 'Visible to customers'},
         insert_fields={
             'name': {'required': True, 'type': 'str', 'label': 'Product name'},
             'type': {'required': True, 'type': 'str', 'label': 'Product type'},
@@ -117,12 +124,13 @@ def base_list():
             'materials_care': {'required': False, 'type': 'textarea', 'label': 'Materials & care'},
             'fit': {'required': False, 'type': 'textarea', 'label': 'Fit'},
             'shipping_returns': {'required': False, 'type': 'textarea', 'label': 'Shipping & returns'},
-            'included_panel': {'required': False, 'type': 'bool', 'label': 'Includes matching panel'},
-            'sold_out': {'required': False, 'type': 'bool', 'label': 'Sold out'},
-            'ordered_even_out_of_stock': {'required': False, 'type': 'bool', 'label': 'Allow ordering when out of stock', 'default': True},
-            'image_url': {'required': False, 'type': 'str', 'label': 'Image URL'},
-            'images': {'required': False, 'type': 'images', 'label': 'Product images'},
-            'is_active': {'required': False, 'type': 'bool', 'label': 'Active'},
+            'included_panel': {'required': False, 'type': 'bool', 'label': 'Includes a matching panel'},
+            'sold_out': {'required': False, 'type': 'bool', 'label': 'Mark as sold out'},
+            'ordered_even_out_of_stock': {'required': False, 'type': 'bool', 'label': 'Allow orders while out of stock', 'default': True,
+                                          'help': 'When off, customers can send a request instead of placing an order.'},
+            'image_url': {'required': False, 'type': 'str', 'label': 'Fallback image address', 'help': 'Used only when no gallery image is available.'},
+            'images': {'required': False, 'type': 'images', 'label': 'Product photos'},
+            'is_active': {'required': False, 'type': 'bool', 'label': 'Show this product to customers', 'default': True},
         },
         update_fields={
             'name': {'required': True, 'type': 'str', 'label': 'Product name'},
@@ -142,12 +150,13 @@ def base_list():
             'materials_care': {'required': False, 'type': 'textarea', 'label': 'Materials & care'},
             'fit': {'required': False, 'type': 'textarea', 'label': 'Fit'},
             'shipping_returns': {'required': False, 'type': 'textarea', 'label': 'Shipping & returns'},
-            'included_panel': {'required': False, 'type': 'bool', 'label': 'Includes matching panel'},
-            'sold_out': {'required': False, 'type': 'bool', 'label': 'Sold out'},
-            'ordered_even_out_of_stock': {'required': False, 'type': 'bool', 'label': 'Allow ordering when out of stock'},
-            'image_url': {'required': False, 'type': 'str', 'label': 'Image URL'},
-            'images': {'required': False, 'type': 'images', 'label': 'Product images'},
-            'is_active': {'required': False, 'type': 'bool', 'label': 'Active'},
+            'included_panel': {'required': False, 'type': 'bool', 'label': 'Includes a matching panel'},
+            'sold_out': {'required': False, 'type': 'bool', 'label': 'Mark as sold out'},
+            'ordered_even_out_of_stock': {'required': False, 'type': 'bool', 'label': 'Allow orders while out of stock',
+                                          'help': 'When off, customers can send a request instead of placing an order.'},
+            'image_url': {'required': False, 'type': 'str', 'label': 'Fallback image address', 'help': 'Used only when no gallery image is available.'},
+            'images': {'required': False, 'type': 'images', 'label': 'Product photos'},
+            'is_active': {'required': False, 'type': 'bool', 'label': 'Show this product to customers'},
         },
         search_fields=['name', 'type', 'badge'],
         actions=['create', 'update', 'delete'],
@@ -222,25 +231,22 @@ def order_list():
         socketio_enabled=SOCKETIO_ENABLED,
         audit_enabled=AUDIT_ENABLED,
         csrf_token=generate_csrf_token(),
-        menu_label='Order',
+        menu_label='Orders',
         pk='id',
         api_base='/api/orders',
-        list_fields=['id', 'user', 'full_name', 'email', 'phone', 'address', 'region', 'payment_method', 'total', 'status'],
-        field_labels={'id': 'id', 'user': 'user', 'full_name': 'full_name', 'email': 'email', 'phone': 'phone',
-                      'address': 'address', 'region': 'region', 'payment_method': 'payment_method', 'total': 'total', 'status': 'status'},
+        list_fields=['id', 'full_name', 'email', 'phone', 'total', 'status', 'created_at'],
+        field_labels={'id': 'Order #', 'full_name': 'Customer', 'email': 'Email', 'phone': 'Phone',
+                      'address': 'Address', 'region': 'Region', 'payment_method': 'Payment', 'total': 'Total', 'status': 'Order stage', 'created_at': 'Placed'},
         insert_fields={'user': {'required': False, 'type': 'int'}, 'full_name': {'required': True, 'type': 'str'},
                        'email': {'required': True, 'type': 'str'}, 'phone': {'required': False, 'type': 'str'},
                        'address': {'required': True, 'type': 'str'}, 'region': {'required': False, 'type': 'str'},
                        'city': {'required': True, 'type': 'str'}, 'country': {'required': True, 'type': 'str'}},
-        update_fields={'status': {'required': True, 'type': 'str'}},
-        search_fields=['full_name', 'email', 'status'],
-        actions=['create', 'update', 'delete'],
-        custom_actions=[{'name': 'mark_paid', 'method': 'PATCH', 'label': 'Mark as paid', 'confirm': True, 'params': [],
-                         'route': '/api/orders/<int:id>/mark_paid'},
-                        {'name': 'ship', 'method': 'PATCH', 'label': 'Mark as shipped', 'confirm': True, 'params': [],
-                         'route': '/api/orders/<int:id>/ship'},
-                        {'name': 'cancel', 'method': 'PATCH', 'label': 'Cancel order', 'confirm': True, 'params': [],
-                         'route': '/api/orders/<int:id>/cancel'}],
+        update_fields={'status': {'required': True, 'type': 'str', 'label': 'Order stage', 'choices': ['pending', 'contacted', 'confirmed', 'paid', 'shipped', 'cancelled'],
+                                  'choiceLabels': {'pending': 'New', 'contacted': 'Contacted', 'confirmed': 'Confirmed', 'paid': 'Confirmed (legacy)', 'shipped': 'Shipped', 'cancelled': 'Cancelled'}}},
+        search_fields=['id', 'full_name', 'email', 'phone', 'status'],
+        status_choices={'pending,contacted': 'Needs follow-up', 'pending': 'New', 'contacted': 'Contacted', 'confirmed': 'Confirmed', 'paid': 'Confirmed', 'shipped': 'Shipped', 'cancelled': 'Cancelled'},
+        actions=[],
+        custom_actions=[],
         foreign_keys={},
     )
 
@@ -286,7 +292,7 @@ def review_list():
         socketio_enabled=SOCKETIO_ENABLED,
         audit_enabled=AUDIT_ENABLED,
         csrf_token=generate_csrf_token(),
-        menu_label='Review',
+        menu_label='Reviews',
         pk='id',
         api_base='/api/reviews',
         list_fields=['id', 'author_name', 'rating', 'quote', 'is_published'],
@@ -313,7 +319,7 @@ def subscriber_list():
         socketio_enabled=SOCKETIO_ENABLED,
         audit_enabled=AUDIT_ENABLED,
         csrf_token=generate_csrf_token(),
-        menu_label='Subscriber',
+        menu_label='Email subscribers',
         pk='id',
         api_base='/api/subscribers',
         list_fields=['id', 'email'],
@@ -338,26 +344,28 @@ def swap_list():
         socketio_enabled=SOCKETIO_ENABLED,
         audit_enabled=AUDIT_ENABLED,
         csrf_token=generate_csrf_token(),
-        menu_label='Swap',
+        menu_label='Swaps',
         pk='id',
         api_base='/api/swaps',
-        list_fields=['id', 'name', 'artist', 'price', 'is_free', 'stock_quantity', 'ordered_even_out_of_stock', 'popularity', 'image_url', 'images', 'is_active'],
-        field_labels={'id': 'id', 'name': 'name', 'artist': 'artist', 'price': 'price', 'is_free': 'is_free',
-                      'popularity': 'popularity', 'stock_quantity': 'stock', 'ordered_even_out_of_stock': 'Allow order when out of stock', 'image_url': 'image_url', 'images': 'images', 'is_active': 'is_active'},
-        insert_fields={'name': {'required': True, 'type': 'str'}, 'artist': {'required': True, 'type': 'int', 'label': 'Artist'},
-                       'price': {'required': False, 'type': 'float'}, 'is_free': {'required': False, 'type': 'bool'},
-                       'popularity': {'required': False, 'type': 'int'},
-                       'image_url': {'required': False, 'type': 'str'}, 'images': {'required': False, 'type': 'images', 'label': 'Product images'},
-                       'stock_quantity': {'required': False, 'type': 'int', 'label': 'Stock quantity (blank = untracked)'},
-                       'ordered_even_out_of_stock': {'required': False, 'type': 'bool', 'label': 'Allow ordering when out of stock', 'default': True},
-                       'is_active': {'required': False, 'type': 'bool'}},
-        update_fields={'name': {'required': False, 'type': 'str'}, 'artist': {'required': False, 'type': 'int', 'label': 'Artist'},
-                       'price': {'required': False, 'type': 'float'}, 'is_free': {'required': False, 'type': 'bool'},
-                       'popularity': {'required': False, 'type': 'int'}, 'image_url': {'required': False, 'type': 'str'},
-                       'images': {'required': False, 'type': 'images', 'label': 'Product images'},
-                       'stock_quantity': {'required': False, 'type': 'int', 'label': 'Stock quantity (blank = untracked)'},
-                       'ordered_even_out_of_stock': {'required': False, 'type': 'bool', 'label': 'Allow ordering when out of stock'},
-                       'is_active': {'required': False, 'type': 'bool'}},
+        list_fields=['id', 'name', 'artist', 'price', 'is_free', 'stock_quantity', 'ordered_even_out_of_stock', 'popularity', 'images', 'is_active'],
+        field_labels={'id': 'ID', 'name': 'Swap name', 'artist': 'Artist', 'price': 'Price', 'is_free': 'Free',
+                      'popularity': 'Display order', 'stock_quantity': 'Stock', 'ordered_even_out_of_stock': 'Allow orders when sold out', 'image_url': 'Fallback image address', 'images': 'Product photos', 'is_active': 'Visible to customers'},
+        insert_fields={'name': {'required': True, 'type': 'str', 'label': 'Swap name'}, 'artist': {'required': True, 'type': 'int', 'label': 'Artist'},
+                       'price': {'required': False, 'type': 'float', 'label': 'Price'}, 'is_free': {'required': False, 'type': 'bool', 'label': 'This swap is free'},
+                       'popularity': {'required': False, 'type': 'int', 'label': 'Sort rank', 'help': 'Optional: smaller numbers appear earlier.'},
+                       'image_url': {'required': False, 'type': 'str', 'label': 'Fallback image address', 'help': 'Used only when no gallery image is available.'}, 'images': {'required': False, 'type': 'images', 'label': 'Swap photos'},
+                       'stock_quantity': {'required': False, 'type': 'int', 'label': 'Available quantity', 'help': 'Leave blank if you do not track stock.'},
+                       'ordered_even_out_of_stock': {'required': False, 'type': 'bool', 'label': 'Allow orders while out of stock', 'default': True,
+                                                     'help': 'When off, customers can send a request instead of placing an order.'},
+                       'is_active': {'required': False, 'type': 'bool', 'label': 'Show this swap to customers', 'default': True}},
+        update_fields={'name': {'required': False, 'type': 'str', 'label': 'Swap name'}, 'artist': {'required': False, 'type': 'int', 'label': 'Artist'},
+                       'price': {'required': False, 'type': 'float', 'label': 'Price'}, 'is_free': {'required': False, 'type': 'bool', 'label': 'This swap is free'},
+                       'popularity': {'required': False, 'type': 'int', 'label': 'Sort rank', 'help': 'Optional: smaller numbers appear earlier.'}, 'image_url': {'required': False, 'type': 'str', 'label': 'Fallback image address', 'help': 'Used only when no gallery image is available.'},
+                       'images': {'required': False, 'type': 'images', 'label': 'Swap photos'},
+                       'stock_quantity': {'required': False, 'type': 'int', 'label': 'Available quantity', 'help': 'Leave blank if you do not track stock.'},
+                       'ordered_even_out_of_stock': {'required': False, 'type': 'bool', 'label': 'Allow orders while out of stock',
+                                                     'help': 'When off, customers can send a request instead of placing an order.'},
+                       'is_active': {'required': False, 'type': 'bool', 'label': 'Show this swap to customers'}},
         search_fields=['name'],
         actions=['create', 'update', 'delete'],
         custom_actions=[],
@@ -392,7 +400,7 @@ def user_list():
         socketio_enabled=SOCKETIO_ENABLED,
         audit_enabled=AUDIT_ENABLED,
         csrf_token=generate_csrf_token(),
-        menu_label='User',
+        menu_label='Customers',
         pk='id',
         api_base='/api/users',
         list_fields=['id', 'name', 'email', 'password'],
@@ -412,9 +420,36 @@ def user_list():
 @admin_ui_bp.route("/admin")
 @login_required
 def index():
+    pending_orders = Order.select().where(Order.status.in_(['pending', 'contacted'])).order_by(Order.created_at.desc())
+    today_orders = Order.select().where(Order.created_at >= date.today()).count()
+    low_stock = []
+    for base in Base.select().where(Base.is_active == True):
+        try:
+            stock = json.loads(base.size_stock or '{}')
+            if not isinstance(stock, dict):
+                stock = {}
+        except (TypeError, ValueError):
+            stock = {}
+        quantities = []
+        for value in stock.values():
+            try:
+                quantities.append(int(value))
+            except (TypeError, ValueError):
+                continue
+        if any(0 <= quantity <= 3 for quantity in quantities):
+            low_stock.append({'name': base.name, 'url': '/admin/bases'})
+    for swap in Swap.select().where(Swap.is_active == True, Swap.stock_quantity.is_null(False), Swap.stock_quantity <= 3):
+        low_stock.append({'name': swap.name, 'url': '/admin/swaps'})
+    recent_orders = list(Order.select().order_by(Order.created_at.desc()).limit(5))
     return render_template(
         "admin/index.html", menu_items=MENU_ITEMS, active=None,
         auth_enabled=AUTH_ENABLED, csrf_token=generate_csrf_token(),
         socketio_enabled=SOCKETIO_ENABLED,
         audit_enabled=AUDIT_ENABLED,
+        pending_orders=list(pending_orders.limit(5)),
+        pending_order_count=pending_orders.count(),
+        today_order_count=today_orders,
+        low_stock=low_stock[:8],
+        low_stock_count=len(low_stock),
+        recent_orders=recent_orders,
     )
